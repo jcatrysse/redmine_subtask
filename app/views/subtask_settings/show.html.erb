@@ -1,0 +1,37 @@
+<% if @subtasks.first %>
+<div class="box tabular">
+<% @subtasks.each do |subtask| %>
+<%= form_tag(update_subtask_path(@project, subtask.id), method: :put, class: "tabular") do %>
+<span>
+  <span><strong>Parent tracker</strong></span>
+  <%= select_tag(:parent, options_from_collection_for_select(@trackers, :id, :name, subtask.parent))  %>
+  <span><strong>Child tracker</strong></span>
+  <%= select_tag(:child, options_from_collection_for_select(@trackers, :id, :name, subtask.child))  %>
+  <span><strong>Default</strong></span>
+  <%= check_box_tag(:default, :default, subtask.default) %>
+  <span><strong>Auto-create subtask</strong></span>
+  <%= check_box_tag(:auto, :auto, subtask.auto) %>
+  <%= submit_tag l(:button_update) %>
+</span>
+<% end %>
+<%= link_to l(:button_delete), delete_subtask_path(@project.id, subtask.id), :class => "icon icon-del", :method => :delete, :confirm => l(:text_are_you_sure) %>
+</br>
+<% end %>
+</div>
+<% end %>
+
+<%= form_tag(create_subtask_path(@project.id), method: :post, class: "tabular") do %>
+<div class="box tabular">
+<span>
+  <span><strong>Parent tracker</strong></span>
+  <%= select_tag(:parent, options_from_collection_for_select(@trackers, :id, :name))  %>
+  <span><strong>Child tracker</strong></span>
+  <%= select_tag(:child, options_from_collection_for_select(@trackers, :id, :name))  %>
+  <span><strong>Default</strong></span>
+  <%= check_box_tag(:default, :default, false) %>
+  <span><strong>Auto-create subtask</strong></span>
+  <%= check_box_tag(:auto, :auto, false) %>
+  <%= submit_tag l(:button_add) %>
+</span>
+</div>
+<% end %>

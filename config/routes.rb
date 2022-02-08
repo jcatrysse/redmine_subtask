@@ -1,0 +1,5 @@
+get 'projects/:project_id/subtask_settings', to: 'subtask_settings#index', as: 'list_subtask'
+get 'projects/:project_id/subtask_settings/show', to: 'subtask_settings#show', as: 'show_subtask'
+post 'projects/:project_id/subtask_settings/create', to: 'subtask_settings#create', as: 'create_subtask'
+put 'projects/:project_id/subtask_settings/:subtask_id', to: 'subtask_settings#update', as: 'update_subtask'
+delete 'projects/:project_id/subtask_settings/:subtask_id', to: 'subtask_settings#destroy', as: 'delete_subtask'

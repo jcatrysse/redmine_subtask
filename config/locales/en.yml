@@ -1,0 +1,10 @@
+# English strings go here for Rails i18n
+en:
+  subtask: Subtask
+  notice_fail_create_subtask: Subtask-config creation failed.
+  notice_successful_create_subtask: Subtask-config created successfully.
+  notice_fail_update_subtask: Subtask-config update failed.
+  notice_successful_update_subtask : Subtask-config updated successfully.
+  notice_fail_delete_subtask: Subtask-config delete failed.
+  notice_successful_delete_subtask : Subtask-config deleted successfully.
+  

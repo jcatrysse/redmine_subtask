@@ -1,0 +1,25 @@
+<% if issue && issue.tracker_id && !issue.id %>
+  <% parent = Tracker.where(:id => issue.tracker_id).first %>
+  <% subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id) %>
+  <% if subtasks.first %>
+  <%= hidden_field_tag 'issue[subtask_child_ids][]', '' %>
+  <p id="subtasks_form">
+    <label>Create subtasks <%= issue.id %></label>
+    <span id="subtasks_inputs">
+    <% subtasks.each do |subtask| %>     
+      <% child = Tracker.where(:id => subtask.child).first %>
+      <label id="issue_subtask_child_ids_<%= child.id %>" class="floating">
+        <% if subtask.auto %>
+        <%= check_box_tag "issue[subtask_child_ids][]", child.id, true, :readonly => true, "onclick" => "return false;" %>
+          <%= child.name %> (auto)
+      <% else %>
+        <%= check_box_tag "issue[subtask_child_ids][]", child.id, subtask.default %>
+        <%= child.name %>
+      <% end %>
+      </label>
+    <% end %>
+    </span>
+  </p>
+  <% end %>
+<% end %>
+
