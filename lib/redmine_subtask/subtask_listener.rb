@@ -8,7 +8,7 @@ module RedmineSubtask
       if context[:params][:issue].key?("subtask_child_ids")
         subtasks = context[:params][:issue]['subtask_child_ids']
       else
-        subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id, :default => true).pluck(:child)
+        subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id, :default => true, :auto => true).pluck(:child)
       end
       return unless subtasks
       createSubtasks(subtasks, issue)
