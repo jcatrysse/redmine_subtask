@@ -10,7 +10,7 @@
       <% child = Tracker.where(:id => subtask.child).first %>
       <label id="issue_subtask_child_ids_<%= child.id %>" class="floating">
         <% if subtask.auto %>
-        <%= check_box_tag "issue[subtask_child_ids][]", child.id, true, :readonly => true, "onclick" => "return false;" %>
+        <%= check_box_tag "issue[subtask_child_ids][]", child.id, true, :readonly => true, :disabled => true, "onclick" => "return false;" %>
           <%= child.name %> (auto)
       <% else %>
         <%= check_box_tag "issue[subtask_child_ids][]", child.id, subtask.default %>
