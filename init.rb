@@ -1,3 +1,5 @@
+require "redmine_subtask"
+
 Redmine::Plugin.register :redmine_subtask do
   name 'Redmine Auto-create Sub-tickets plugin'
   author 'rbailleul'
