@@ -1,19 +1,20 @@
-<% if issue && issue.tracker_id && !issue.id %>
+<% if !issue.project.enabled_module(:subtasks).nil? %>
+ <% if issue && issue.tracker_id && !issue.id %>
   <% parent = Tracker.where(:id => issue.tracker_id).first %>
   <% subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id) %>
   <% if subtasks.first %>
-  <%= hidden_field_tag 'issue[subtask_child_ids][]', '' %>
+  <%= hidden_field_tag 'issue[new_subtask_child_ids][]', '' %>
   <p id="subtasks_form">
-    <label>Create subtasks <%= issue.id %></label>
+    <label>Create subtasks</label>
     <span id="subtasks_inputs">
-    <% subtasks.each do |subtask| %>     
+    <% subtasks.each do |subtask| %>
       <% child = Tracker.where(:id => subtask.child).first %>
-      <label id="issue_subtask_child_ids_<%= child.id %>" class="floating">
-        <% if subtask.auto %>
-        <%= check_box_tag "issue[subtask_child_ids][]", child.id, true, :readonly => true, :disabled => true, "onclick" => "return false;" %>
-          <%= child.name %> (auto)
+      <label id="issue_new_subtask_child_ids_<%= child.id %>" class="floating">
+      <% if subtask.auto %>
+        <%= check_box_tag "issue[new_subtask_child_ids][]", child.id, true, :readonly => true, :disabled => true, "onclick" => "return false;" %>
+        <%= child.name %> (required)
       <% else %>
-        <%= check_box_tag "issue[subtask_child_ids][]", child.id, subtask.default %>
+        <%= check_box_tag "issue[new_subtask_child_ids][]", child.id, subtask.default %>
         <%= child.name %>
       <% end %>
       </label>
@@ -21,5 +22,46 @@
     </span>
   </p>
   <% end %>
+ <% else %>
+  <% parent = Tracker.where(:id => issue.tracker_id).first %>
+  <% subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id) %>
+  <% existing = issue.children.map {|child| child.tracker.id } %>
+  <% if subtasks.first %>
+  <%= hidden_field_tag 'issue[new_subtask_child_ids][]', '' %>
+  <p id="subtasks_form">
+    <label>Create new subtasks</label>
+    <span id="subtasks_inputs">
+    <% subtasks.each do |subtask| %>
+      <% child = Tracker.where(:id => subtask.child).first %>
+      <% existing_children = existing.count(child.id) %>
+      <label id="issue_new_subtask_child_ids_<%= child.id %>" class="floating">
+      <% existing_children_of_tracker = "(" %>
+      <% if subtask.auto %>
+        <% existing_children_of_tracker += "required, " %>
+      <% end %>
+
+      <% if existing_children == 0 %>
+        <% existing_children_of_tracker += "none exist yet)" %>
+      <% else %>
+        <% existing_children_of_tracker += existing_children.to_s %>
+        <% existing_children_of_tracker += " exist" %>
+        <% if existing_children == 1 %>
+          <% existing_children_of_tracker += "s" %>
+        <% end %>
+        <% existing_children_of_tracker += " already)" %>
+      <% end %>
+
+      <% if existing_children == 0 %>
+        <%= check_box_tag "issue[new_subtask_child_ids][]", child.id, subtask.default %>
+      <% else %>
+        <%= check_box_tag "issue[new_subtask_child_ids][]", child.id, false %>
+      <% end %>
+      <%= child.name %> <%= existing_children_of_tracker %>
+      </label>
+    <% end %>
+    </span>
+  </p>
+  <% end %>
+ <% end %>
 <% end %>
 

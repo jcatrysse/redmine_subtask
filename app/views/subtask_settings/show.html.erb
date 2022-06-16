@@ -29,7 +29,7 @@
   <%= select_tag(:child, options_from_collection_for_select(@trackers, :id, :name))  %>
   <span><strong>Default:</strong></span>
   <%= check_box_tag(:default, :default, false) %>
-  <span><strong>Auto-create:</strong></span>
+  <span><strong>Required/forced:</strong></span>
   <%= check_box_tag(:auto, :auto, false) %>
   <%= submit_tag l(:button_add) %>
 </span>

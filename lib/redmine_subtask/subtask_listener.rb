@@ -6,18 +6,40 @@ module RedmineSubtask
         issue = context[:issue]
         controller = context[:controller]
 
-        selected_subtasks = []
-        if context[:params][:issue].key?("subtask_child_ids")
-          selected_subtasks = context[:params][:issue]['subtask_child_ids']
+        if issue.project.enabled_module(:subtasks).nil?
+          return
+        else
+          selected_subtasks = []
+          if context[:params][:issue].key?("new_subtask_child_ids")
+            selected_subtasks = context[:params][:issue]['new_subtask_child_ids']
+          end
+
+          auto_subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id, :default => true, :auto => true).pluck(:child)
+
+          subtasks = (selected_subtasks+auto_subtasks).uniq
+
+          return unless subtasks
+
+          createSubtasks(subtasks, issue)
         end
+      end
 
-        auto_subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id, :default => true, :auto => true).pluck(:child)
+      def controller_issues_edit_after_save(context = {})
+        issue = context[:issue]
+        controller = context[:controller]
 
-        subtasks = (selected_subtasks+auto_subtasks).uniq
+        if issue.project.enabled_module(:subtasks).nil?
+          return
+        else
+          selected_subtasks = []
+          if context[:params][:issue].key?("new_subtask_child_ids")
+            selected_subtasks = context[:params][:issue]['new_subtask_child_ids']
+          end
 
-        return unless subtasks
+          return unless selected_subtasks
 
-        createSubtasks(subtasks, issue)
+          createSubtasks(selected_subtasks, issue)
+        end
       end
 
       private
@@ -27,7 +49,7 @@ module RedmineSubtask
           subtasks.each do |subtask|
             begin
 
-              child = parent.copy()
+              child = parent.copy(nil, {:subtasks => false, :link => false})
             
               child.parent_issue_id=(parent.id)
               child.tracker_id=(subtask)
