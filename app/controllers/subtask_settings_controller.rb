@@ -3,6 +3,7 @@ class SubtaskSettingsController < ApplicationController
 
   def show
     @trackers = @project.trackers
+    @all_trackers = Tracker.all
     @subtasks = Subtask.where(:project_id => @project.id)
 
     @templates = Hash.new
@@ -10,9 +11,7 @@ class SubtaskSettingsController < ApplicationController
     if @subtasks.nil? or @project.enabled_module(:issue_templates).nil?
       return
     else
-      children = @project.trackers
-
-      children.map{|tracker| tracker.id}.each do |child|
+      @all_trackers.map{|tracker| tracker.id}.each do |child|
         @templates[child] = get_templates(child)
       end
     end

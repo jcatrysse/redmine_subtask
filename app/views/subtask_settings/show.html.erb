@@ -8,10 +8,10 @@
         <td>
           <div class="box tabular">
           When creating a ticket of tracker
-          <%= select_tag(:parent, options_from_collection_for_select(@trackers, :id, :name, subtask.parent), {:disabled => true})  %>,
+          <%= select_tag(:parent, options_from_collection_for_select(@all_trackers, :id, :name, subtask.parent), {:disabled => true})  %>,
           <%= hidden_field_tag(:parent, subtask.parent) %>
           suggest creation of a subticket of tracker
-          <%= select_tag(:child, options_from_collection_for_select(@trackers, :id, :name, subtask.child), {:disabled => true}) %>.
+          <%= select_tag(:child, options_from_collection_for_select(@all_trackers, :id, :name, subtask.child), {:disabled => true}) %>.
           <%= hidden_field_tag(:child, subtask.child) %>
           </div>
         </td>
@@ -66,9 +66,9 @@
     <td>
       <div class="box tabular">
         When creating a ticket of tracker
-        <%= select_tag(:parent, options_from_collection_for_select(@trackers, :id, :name))  %>,
+        <%= select_tag(:parent, options_from_collection_for_select(@all_trackers, :id, :name))  %>,
         suggest creation of a subticket of tracker
-        <%= select_tag(:child, options_from_collection_for_select(@trackers, :id, :name))  %>.
+        <%= select_tag(:child, options_from_collection_for_select(@all_trackers, :id, :name))  %>.
       </div>
     <td>
       <div class="box tabular">
