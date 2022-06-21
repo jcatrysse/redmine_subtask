@@ -2,50 +2,55 @@
 <span><strong>Subtask creation rules:</strong><span>
 <div class="box tabular">
 <table>
-  <tr><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
 <% @subtasks.each do |subtask| %>
     <%= form_tag(update_subtask_path(@project, subtask.id), method: :put, class: "tabular") do %>
       <tr>
         <td>
+          <div class="box tabular">
           When creating a ticket of tracker
           <%= select_tag(:parent, options_from_collection_for_select(@trackers, :id, :name, subtask.parent), {:disabled => true})  %>,
           <%= hidden_field_tag(:parent, subtask.parent) %>
-        </td>
-        <td>
           suggest creation of a subticket of tracker
           <%= select_tag(:child, options_from_collection_for_select(@trackers, :id, :name, subtask.child), {:disabled => true}) %>.
           <%= hidden_field_tag(:child, subtask.child) %>
+          </div>
         </td>
         <td>
+          <div class="box tabular">
             Create subtask by default: <%= check_box_tag(:default, :default, subtask.default) %>
+          </div>
         </td>
         <td>
+          <div class="box tabular">
             Create subtask by force: <%= check_box_tag(:auto, :auto, subtask.auto) %>
+          </div>
         </td>
         <td>
+          <div class="box tabular">
             Apply to descendant projects: <%= check_box_tag(:inheritance, :inheritance, subtask.inheritance) %>
+          </div>
         </td>
-        <% if !@project.enabled_module(:issue_templates).nil? %>
-          <% child_tracker = subtask.child %>
-          <% child_templates = @templates[child_tracker] %>
-          <% template = child_templates.select{|template| subtask.template == template.id} %>
-          <% if template.length == 1 and subtask.global == (template[0].is_a? GlobalIssueTemplate) %>
-            <% template_id = subtask.template %>
-          <% else %>
-            <% template_id = nil %>
-          <% end %>
-          <td>
+        <td>
+          <div class="box tabular">
+          <% if !@project.enabled_module(:issue_templates).nil? %>
+            <% child_tracker = subtask.child %>
+            <% child_templates = @templates[child_tracker] %>
+            <% template = child_templates.select{|template| subtask.template == template.id} %>
+            <% if template.length == 1 and subtask.global == (template[0].is_a? GlobalIssueTemplate) %>
+              <% template_id = subtask.template %>
+            <% else %>
+              <% template_id = nil %>
+            <% end %>
             Apply template to child:
             <%= select_tag(:template, options_from_collection_for_select(child_templates, :id, :title, template_id), {:include_blank => true}) %>
-          </td>
-          <td>
-          </td>
-        <% end %>
-        <td>
-          <%= submit_tag l(:button_update) %>
+          <% end %>
+          </div>
         </td>
         <td>
-          <%= link_to l(:button_delete), delete_subtask_path(@project.id, subtask.id), :class => "icon icon-del", :method => :delete, data: {:confirm => l(:text_are_you_sure)} %>
+          <div class="box tabular">
+            <%= submit_tag l(:button_update) %>
+            <%= link_to l(:button_delete), delete_subtask_path(@project.id, subtask.id), :class => "icon icon-del", :method => :delete, data: {:confirm => l(:text_are_you_sure)} %>
+          </div>
         </td>
       </tr>
     <% end %>
@@ -59,22 +64,26 @@
 <table>
   <tr>
     <td>
-      When creating a ticket of tracker
-      <%= select_tag(:parent, options_from_collection_for_select(@trackers, :id, :name))  %>,
+      <div class="box tabular">
+        When creating a ticket of tracker
+        <%= select_tag(:parent, options_from_collection_for_select(@trackers, :id, :name))  %>,
+        suggest creation of a subticket of tracker
+        <%= select_tag(:child, options_from_collection_for_select(@trackers, :id, :name))  %>.
+      </div>
+    <td>
+      <div class="box tabular">
+        Create subtask by default: <%= check_box_tag(:default, :default, false) %>
+      </div>
     </td>
     <td>
-      suggest creation of a subticket of tracker
-      <%= select_tag(:child, options_from_collection_for_select(@trackers, :id, :name))  %>.
+      <div class="box tabular">
+        Create subtask by force: <%= check_box_tag(:auto, :auto, false ) %>
+      </div>
     </td>
     <td>
-    <td>
-      Create subtask by default <%= check_box_tag(:default, :default, false) %>
-    </td>
-    <td>
-      Create subtask by force <%= check_box_tag(:auto, :auto, false ) %>
-    </td>
-    <td>
-      Apply to descendant projects: <%= check_box_tag(:inheritance, :inheritance, false) %>
+      <div class="box tabular">
+        Apply to descendant projects: <%= check_box_tag(:inheritance, :inheritance, false) %>
+      </div>
     </td>
     <td>
       <%= submit_tag l(:button_add) %>
