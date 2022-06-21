@@ -6,6 +6,8 @@ class CreateSubtask < ActiveRecord::Migration[5.2]
       t.integer :project_id
       t.boolean :default
       t.boolean :auto
+      t.integer :template
+      t.boolean :global
     end
   end
 end

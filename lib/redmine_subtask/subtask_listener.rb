@@ -10,11 +10,12 @@ module RedmineSubtask
           return
         else
           selected_subtasks = []
-          if context[:params][:issue].key?("new_subtask_child_ids")
-            selected_subtasks = context[:params][:issue]['new_subtask_child_ids']
+          if context[:params][:issue].key?("new_subtask_ids")
+            selected_subtask_ids = context[:params][:issue]['new_subtask_ids'].reject { |id| id.empty? }
+            selected_subtasks = selected_subtask_ids.map{|subtask_id| Subtask.where(:id => subtask_id).first}
           end
 
-          auto_subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id, :default => true, :auto => true).pluck(:child)
+          auto_subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id, :auto => true)
 
           subtasks = (selected_subtasks+auto_subtasks).uniq
 
@@ -32,8 +33,8 @@ module RedmineSubtask
           return
         else
           selected_subtasks = []
-          if context[:params][:issue].key?("new_subtask_child_ids")
-            selected_subtasks = context[:params][:issue]['new_subtask_child_ids']
+          if context[:params][:issue].key?("new_subtask_ids")
+            selected_subtasks = context[:params][:issue]['new_subtask_ids']
           end
 
           return unless selected_subtasks
@@ -43,31 +44,69 @@ module RedmineSubtask
       end
 
       private
-    
-      def createSubtasks(subtasks, parent)
-        Thread.start do
-          subtasks.each do |subtask|
-            begin
 
-              child = parent.copy(nil, {:subtasks => false, :link => false})
-            
-              child.parent_issue_id=(parent.id)
-              child.tracker_id=(subtask)
-              child.description=('Cfr. parent ticket')
-              child.estimated_hours=(0)
-              child.done_ratio = 0
-                        
-              child.save
-            
-              child.relations_from.clear
-              child.relations_to.clear
-            
-              child.save
-            rescue => e
-              Rails.logger.error e
+      def createSubtasks(subtasks, parent)
+        subtasks.each do |subtask|
+          begin
+            child = parent.copy(nil, {:subtasks => false, :link => false})
+
+            child.parent_issue_id=(parent.id)
+            child.tracker_id=(subtask.child)
+            child.description=('')
+            if parent.project.enabled_module(:issue_templates).present? and subtask.template.present?
+              if subtask.global
+                templates = global_templates(parent.project.id, subtask.child)
+              else
+                templates = issue_templates(parent.project.id, child.tracker_id)+inherit_templates(parent.project.id, child.tracker_id)
+              end
+              template = templates.select{|template| template.id == subtask.template}
+              if template.present?
+                child.description=(template.description)
+              end
             end
+
+            child.estimated_hours=(0)
+            child.done_ratio = 0
+                        
+            child.save
+            
+            child.relations_from.clear
+            child.relations_to.clear
+            
+            child.save
+          rescue => e
+            Rails.logger.error e
           end
         end
+      end
+
+      private
+
+      def templates_project_setting(projectId)
+        IssueTemplateSetting.find_or_create(projectId)
+      end
+
+      def templates_plugin_setting
+        Setting.plugin_redmine_issue_templates
+      end
+
+      def apply_all_projects?
+        templates_plugin_setting['apply_global_template_to_all_projects'].to_s == 'true'
+      end
+
+      def issue_templates(projectId, trackerId)
+        IssueTemplate.get_templates_for_project_tracker(projectId, trackerId)
+      end
+
+      def inherit_templates(projectId, trackerId)
+        templates_project_setting(projectId).get_inherit_templates(trackerId)
+      end
+
+      def global_templates(projectId, trackerId)
+        return [] if apply_all_projects? && (inherit_templates(projectId, trackerId).present? || issue_templates(projectId, trackerId).present?)
+
+        project_id = apply_all_projects? ? nil : projectId
+        GlobalIssueTemplate.get_templates_for_project_tracker(project_id, trackerId)
       end
     end
 
