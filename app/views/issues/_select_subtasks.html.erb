@@ -2,6 +2,15 @@
  <% if issue && issue.tracker_id && !issue.id %>
   <% parent = Tracker.where(:id => issue.tracker_id).first %>
   <% subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id) %>
+  <% project = Project.find(issue.project_id) %>
+  <% while project.parent_id.present? do %>
+    <% subtasks += Subtask.where(:project_id =>  project.parent_id, :parent => issue.tracker_id, :inheritance => true) %>
+
+    <span><strong>  <%= project.parent_id %>:<%= project.name %> has <%= subtasks.length %> subtasks that apply</strong></span></br>
+    <% project = Project.find(project.parent_id) %>
+
+  <% end %>
+
   <% if subtasks.first %>
   <%= hidden_field_tag 'issue[new_subtask_ids][]', '' %>
   <p id="subtasks_form">

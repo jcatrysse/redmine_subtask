@@ -17,6 +17,13 @@ module RedmineSubtask
 
           auto_subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id, :auto => true)
 
+          project = Project.find(issue.project_id)
+
+          while project.parent_id.present? do
+            auto_subtasks += Subtask.where(:project_id =>  project.parent_id, :parent => issue.tracker_id, :auto => true, :inheritance => true)
+            project = Project.find(project.parent_id)
+          end
+
           subtasks = (selected_subtasks+auto_subtasks).uniq
 
           return unless subtasks
@@ -61,7 +68,7 @@ module RedmineSubtask
               end
               template = templates.select{|template| template.id == subtask.template}
               if template.present?
-                child.description=(template.description)
+                child.description=(template[0].description)
               end
             end
 

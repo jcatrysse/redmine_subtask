@@ -2,7 +2,7 @@
 <span><strong>Subtask creation rules:</strong><span>
 <div class="box tabular">
 <table>
-  <tr><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+  <tr><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
 <% @subtasks.each do |subtask| %>
     <%= form_tag(update_subtask_path(@project, subtask.id), method: :put, class: "tabular") do %>
       <tr>
@@ -21,6 +21,9 @@
         </td>
         <td>
             Create subtask by force: <%= check_box_tag(:auto, :auto, subtask.auto) %>
+        </td>
+        <td>
+            Apply to descendant projects: <%= check_box_tag(:inheritance, :inheritance, subtask.inheritance) %>
         </td>
         <% if !@project.enabled_module(:issue_templates).nil? %>
           <% child_tracker = subtask.child %>
@@ -47,9 +50,9 @@
       </tr>
     <% end %>
   <% end %>
-<% end %>
 </table>
 </div>
+<% end %>
 <span><strong>Add subtask creation rule:</strong><span>
 <%= form_tag(create_subtask_path(@project.id), method: :post, class: "tabular") do %>
 <div class="box tabular">
@@ -69,6 +72,9 @@
     </td>
     <td>
       Create subtask by force <%= check_box_tag(:auto, :auto, false ) %>
+    </td>
+    <td>
+      Apply to descendant projects: <%= check_box_tag(:inheritance, :inheritance, false) %>
     </td>
     <td>
       <%= submit_tag l(:button_add) %>

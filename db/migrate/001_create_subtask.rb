@@ -8,6 +8,7 @@ class CreateSubtask < ActiveRecord::Migration[5.2]
       t.boolean :auto
       t.integer :template
       t.boolean :global
+      t.boolean :inheritance
     end
   end
 end

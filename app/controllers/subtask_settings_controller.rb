@@ -28,7 +28,7 @@ class SubtaskSettingsController < ApplicationController
     subtask.child = params[:child]
     subtask.auto = params[:auto]
     subtask.default = params[:default]
-    subtask.template = params[:template]
+    subtask.inheritance = params[:inheritance]
     if subtask.save
       flash[:notice] = l(:notice_successful_create_subtask)
     else
@@ -44,6 +44,7 @@ class SubtaskSettingsController < ApplicationController
     subtask.child = params[:child]
     subtask.auto = params[:auto]
     subtask.default = params[:default]
+    subtask.inheritance = params[:inheritance]
     subtask.template = params[:template]
     subtask.global = (subtask.template.present? and global_templates(subtask.child).map{|template| template.id}.include? subtask.template)
 
