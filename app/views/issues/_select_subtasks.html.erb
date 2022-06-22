@@ -32,7 +32,15 @@
   <% end %>
  <% else %>
   <% parent = Tracker.where(:id => issue.tracker_id).first %>
-  <% subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id) %>
+  <% project = Project.find(issue.project_id) %>
+  <% allowed_tracker_ids = project.trackers.map{|tracker| tracker.id} %>
+  <% subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id, :child => allowed_tracker_ids) %>
+
+  <% while project.parent_id.present? do %>
+    <% subtasks += Subtask.where(:project_id =>  project.parent_id, :parent => issue.tracker_id, :child => allowed_tracker_ids, :inheritance => true) %>
+    <% project = Project.find(project.parent_id) %>
+  <% end %>
+
   <% existing = issue.children.map {|child| child.tracker.id } %>
   <% if subtasks.first %>
   <%= hidden_field_tag 'issue[new_subtask_ids][]', '' %>
@@ -41,7 +49,7 @@
     <span id="subtasks_inputs">
     <% subtasks.each do |subtask| %>
       <% child = Tracker.where(:id => subtask.child).first %>
-      <% existing_children = existing.count(subtask.id) %>
+      <% existing_children = existing.count(subtask.child) %>
       <label id="issue_new_subtask_ids_<%= subtask.id %>" class="floating">
       <% existing_children_of_tracker = "(" %>
       <% if subtask.auto %>

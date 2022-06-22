@@ -41,7 +41,8 @@ module RedmineSubtask
         else
           selected_subtasks = []
           if context[:params][:issue].key?("new_subtask_ids")
-            selected_subtasks = context[:params][:issue]['new_subtask_ids']
+            selected_subtask_ids = context[:params][:issue]['new_subtask_ids']
+            selected_subtasks = selected_subtask_ids.map{|subtask_id| Subtask.where(:id => subtask_id).first}
           end
 
           return unless selected_subtasks
