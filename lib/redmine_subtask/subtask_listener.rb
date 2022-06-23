@@ -76,11 +76,19 @@ module RedmineSubtask
             child.estimated_hours=(0)
             child.done_ratio = 0
             child.reset_custom_values!
-            child.save
             
+            custom_field_ids = (subtask.custom_fields.nil? ? [] : JSON.parse(subtask.custom_fields))
+            custom_field_ids = (custom_field_ids.blank? ? [] : custom_field_ids)
+            parent.custom_field_values.each do |custom_field_value|
+              if custom_field_ids.include? custom_field_value.custom_field.id.to_s
+                child.custom_field_values << custom_field_value
+              end
+            end
+            child.save_custom_field_values
+
             child.relations_from.clear
             child.relations_to.clear
-            
+
             child.save
           rescue => e
             Rails.logger.error e

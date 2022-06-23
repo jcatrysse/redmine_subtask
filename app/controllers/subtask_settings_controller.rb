@@ -1,4 +1,5 @@
 class SubtaskSettingsController < ApplicationController
+  require 'json'
   before_action :find_project, :authorize, only: [:show, :index, :create, :update, :destroy]
 
   def show
@@ -14,6 +15,11 @@ class SubtaskSettingsController < ApplicationController
       @all_trackers.map{|tracker| tracker.id}.each do |child|
         @templates[child] = get_templates(child)
       end
+    end
+
+    @custom_fields = @project.rolled_up_custom_fields
+    if @custom_fields.empty?
+      @custom_fields = []
     end
   end
    
@@ -46,7 +52,7 @@ class SubtaskSettingsController < ApplicationController
     subtask.inheritance = params[:inheritance]
     subtask.template = params[:template]
     subtask.global = (subtask.template.present? and global_templates(subtask.child).map{|template| template.id}.include? subtask.template)
-
+    subtask.custom_fields = params[:custom_fields].to_json
     if subtask.save
       flash[:notice] = l(:notice_successful_update_subtask)
     else
