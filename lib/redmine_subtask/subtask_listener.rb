@@ -75,7 +75,7 @@ module RedmineSubtask
 
             child.estimated_hours=(0)
             child.done_ratio = 0
-                        
+            child.reset_custom_values!
             child.save
             
             child.relations_from.clear
