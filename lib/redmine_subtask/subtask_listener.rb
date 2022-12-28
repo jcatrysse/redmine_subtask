@@ -56,7 +56,7 @@ module RedmineSubtask
       def createSubtasks(subtasks, parent)
         subtasks.each do |subtask|
           begin
-            child = parent.copy(nil, {:subtasks => false, :link => false})
+            child = parent.copy(nil, {:subtasks => false, :attachments => false, :link => false})
 
             child.parent_issue_id=(parent.id)
             child.tracker_id=(subtask.child)
