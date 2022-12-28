@@ -7,6 +7,11 @@ class SubtaskSettingsController < ApplicationController
     @all_trackers = Tracker.all
     @subtasks = Subtask.where(:project_id => @project.id)
 
+    @custom_fields = @project.rolled_up_custom_fields
+    if @custom_fields.empty? or @custom_fields.nil?
+      @custom_fields = []
+    end
+
     @templates = Hash.new
 
     if @subtasks.nil? or @project.enabled_module(:issue_templates).nil?
@@ -15,11 +20,6 @@ class SubtaskSettingsController < ApplicationController
       @all_trackers.map{|tracker| tracker.id}.each do |child|
         @templates[child] = get_templates(child)
       end
-    end
-
-    @custom_fields = @project.rolled_up_custom_fields
-    if @custom_fields.empty?
-      @custom_fields = []
     end
   end
    
