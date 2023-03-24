@@ -1,4 +1,4 @@
-require "redmine_subtask"
+require File.dirname(__FILE__) + '/lib/redmine_subtask'
 
 Redmine::Plugin.register :redmine_subtask do
   name 'Redmine Auto-create Sub-tickets plugin'
