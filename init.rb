@@ -7,8 +7,11 @@ Redmine::Plugin.register :redmine_subtask do
   version '0.0.1'
   url 'https://trustteam.be'
   author_url 'http://brandstapel.be'
+
   project_module :subtasks do
     permission :subtask_settings, {:subtask_settings => [:index, :show, :update, :create, :destroy]}
+    permission :enable_auto_create_subtasks, {:subtask_settings => [:index]}
   end
+
   menu :project_menu, :subtask_settings, { controller: 'subtask_settings', action: 'show' }, caption: 'Subtasks', before: :settings, param: :project_id
 end

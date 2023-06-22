@@ -6,5 +6,6 @@ en:
   notice_fail_update_subtask: Subtask-config update failed.
   notice_successful_update_subtask : Subtask-config updated successfully.
   notice_fail_delete_subtask: Subtask-config delete failed.
-  notice_successful_delete_subtask : Subtask-config deleted successfully.
+  notice_successful_delete_subtask: Subtask-config deleted successfully.
+  permission_enable_auto_create_subtasks: Create subtasks
   

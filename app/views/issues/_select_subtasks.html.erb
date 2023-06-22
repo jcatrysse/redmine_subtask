@@ -1,4 +1,4 @@
-<% if !issue.project.enabled_module(:subtasks).nil? %>
+<% if User.current.allowed_to?(:enable_auto_create_subtasks, @project) && !issue.project.enabled_module(:subtasks).nil? %>
  <% if issue && issue.tracker_id && !issue.id %>
   <% parent = Tracker.where(:id => issue.tracker_id).first %>
   <% project = Project.find(issue.project_id) %>
