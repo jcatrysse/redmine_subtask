@@ -1,4 +1,5 @@
 class Subtask < ActiveRecord::Base
-  unloadable
+  # PATCHED: removed from ActiveSupport in Rails 5.1
+  # unloadable
   belongs_to :project
 end
