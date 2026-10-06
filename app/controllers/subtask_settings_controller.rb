@@ -1,6 +1,7 @@
 class SubtaskSettingsController < ApplicationController
   require 'json'
-  before_action :find_project, :authorize, only: [:show, :index, :create, :update, :destroy]
+  before_action :find_project_by_project_id, :authorize, only: [:show, :index, :create, :update, :destroy]
+  before_action :find_subtask, only: [:update, :destroy]
 
   def show
     @trackers = @project.trackers
@@ -39,12 +40,11 @@ class SubtaskSettingsController < ApplicationController
     else
       flash[:error] = l(:notice_fail_create_subtask)
     end
-    redirect_back(fallback_location: :back)
+    redirect_to show_subtask_path(@project)
   end
   
   def update
-    id = params[:subtask_id]
-    subtask = Subtask.where(:project_id => @project.id).where(:id => id).first
+    subtask = @subtask
     subtask.parent = params[:parent]
     subtask.child = params[:child]
     subtask.auto = params[:auto]
@@ -58,24 +58,25 @@ class SubtaskSettingsController < ApplicationController
     else
       flash[:error] = l(:notice_fail_update_subtask)
     end
-    redirect_back(fallback_location: :back)
+    redirect_to show_subtask_path(@project)
   end
   
   def destroy
-    id = params[:subtask_id]
-    subtask = Subtask.where(:project_id => @project.id).where(:id => id).first
+    subtask = @subtask
     if subtask.destroy
       flash[:notice] = l(:notice_successful_delete_subtask)
     else
       flash[:error] = l(:notice_fail_delete_subtask)
     end
-    redirect_back(fallback_location: :back)
+    redirect_to show_subtask_path(@project)
   end
   
   private
   
-  def find_project
-    @project = Project.find(params[:project_id])
+  def find_subtask
+    @subtask = Subtask.where(:project_id => @project.id).find(params[:subtask_id])
+  rescue ActiveRecord::RecordNotFound
+    render_404
   end
 
   def get_templates(trackerId)
