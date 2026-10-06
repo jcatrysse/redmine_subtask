@@ -28,6 +28,15 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 ## Already on this branch
 
 - `f058fb5` Remove `unloadable`, gone from ActiveSupport since Rails 5.1
+- `c5b78f7` Only create the subtasks of rules that apply to the issue (security: foreign rule ids, permission, API 500)
+- `7ab9bf6` Show the user which subtasks could not be created (work list 2)
+- `dabc36b` Subtask settings: 404 for unknown rules and projects, redirect to the settings page
+- `3016aac` Subtask settings: SVG icon on the delete link
+- `4675ed1` Move the plugin's English UI texts into the locale
+- `2a2d1fa` Tests of the redmine_issue_templates integration (work list 1)
+- `b22f7c7` Keep project and global templates apart when choosing a subtask template
+
+Session in progress (2026-10-06): e2e scenarios, MariaDB and the review still to come.
 
 ## Work list for the migration session
 
