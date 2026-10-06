@@ -13,5 +13,5 @@ Redmine::Plugin.register :redmine_subtask do
     permission :enable_auto_create_subtasks, {:subtask_settings => [:index]}
   end
 
-  menu :project_menu, :subtask_settings, { controller: 'subtask_settings', action: 'show' }, caption: 'Subtasks', before: :settings, param: :project_id
+  menu :project_menu, :subtask_settings, { controller: 'subtask_settings', action: 'show' }, caption: :label_subtask_plural, before: :settings, param: :project_id
 end

@@ -26,6 +26,28 @@ class SubtaskCreationTest < Redmine::IntegrationTest
     end
   end
 
+  def test_new_issue_form_labels
+    forced = create_rule(:auto => true)
+    log_user('jsmith', 'jsmith')
+    get '/projects/ecookbook/issues/new', :params => {:issue => {:tracker_id => 1}}
+    assert_select '#subtasks_form > label', :text => 'Create subtasks'
+    assert_select "#issue_new_subtask_ids_#{forced.id}", :text => /Feature request\s+\(required\)/
+  end
+
+  def test_edit_issue_form_counts_the_existing_subtasks
+    forced = create_rule(:auto => true)
+    one = create_rule(:child => 3)
+    other = create_rule(:child => 1)
+    Issue.generate!(:project_id => 1, :tracker_id => 3, :parent_issue_id => 1)
+    2.times { Issue.generate!(:project_id => 1, :tracker_id => 1, :parent_issue_id => 1) }
+    log_user('jsmith', 'jsmith')
+    get '/issues/1/edit'
+    assert_select '#subtasks_form > label', :text => 'Create new subtasks'
+    assert_select "#issue_new_subtask_ids_#{forced.id}", :text => /Feature request\s+\(required, none exist yet\)/
+    assert_select "#issue_new_subtask_ids_#{one.id}", :text => /Support request\s+\(1 exists already\)/
+    assert_select "#issue_new_subtask_ids_#{other.id}", :text => /Bug\s+\(2 exist already\)/
+  end
+
   def test_new_issue_form_without_permission_hides_the_rules
     create_rule
     Role.find(1).remove_permission!(:enable_auto_create_subtasks)

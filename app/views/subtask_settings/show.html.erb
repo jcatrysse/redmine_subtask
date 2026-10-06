@@ -1,5 +1,5 @@
 <% if @subtasks.first %>
-<span><strong>Subtask creation rules:</strong><span>
+<span><strong><%= l(:label_subtask_rules) %>:</strong></span>
 <div class="box tabular">
 <table>
 <% @subtasks.each do |subtask| %>
@@ -7,27 +7,27 @@
       <tr>
         <td>
           <div class="box tabular">
-          When creating a ticket of tracker
+          <%= l(:text_subtask_rule_parent) %>
           <%= select_tag(:parent, options_from_collection_for_select(@all_trackers, :id, :name, subtask.parent), {:disabled => true})  %>,
           <%= hidden_field_tag(:parent, subtask.parent) %>
-          suggest creation of a subticket of tracker
+          <%= l(:text_subtask_rule_child) %>
           <%= select_tag(:child, options_from_collection_for_select(@all_trackers, :id, :name, subtask.child), {:disabled => true}) %>.
           <%= hidden_field_tag(:child, subtask.child) %>
           </div>
         </td>
         <td>
           <div class="box tabular">
-            Create subtask by default: <%= check_box_tag(:default, :default, subtask.default) %>
+            <%= l(:field_subtask_default) %>: <%= check_box_tag(:default, :default, subtask.default) %>
           </div>
         </td>
         <td>
           <div class="box tabular">
-            Create subtask by force: <%= check_box_tag(:auto, :auto, subtask.auto) %>
+            <%= l(:field_subtask_auto) %>: <%= check_box_tag(:auto, :auto, subtask.auto) %>
           </div>
         </td>
         <td>
           <div class="box tabular">
-            Apply to descendant projects: <%= check_box_tag(:inheritance, :inheritance, subtask.inheritance) %>
+            <%= l(:field_subtask_inheritance) %>: <%= check_box_tag(:inheritance, :inheritance, subtask.inheritance) %>
           </div>
         </td>
         <td>
@@ -41,14 +41,14 @@
             <% else %>
               <% template_id = nil %>
             <% end %>
-            Apply template to child:
+            <%= l(:field_subtask_template) %>:
             <%= select_tag(:template, options_from_collection_for_select(child_templates, :id, :title, template_id), {:include_blank => true}) %>
           <% end %>
           </div>
         </td>
         <td>
           <div class="box tabular">
-            Inherit custom fields:
+            <%= l(:field_subtask_custom_fields) %>:
             <%= select_tag(:custom_fields, options_from_collection_for_select(@custom_fields, :id, :name, (subtask.custom_fields.nil? ? [] : JSON.parse(subtask.custom_fields))), {:multiple => true}) %>
           </div>
         </td>
@@ -64,31 +64,31 @@
 </table>
 </div>
 <% end %>
-<span><strong>Add subtask creation rule:</strong><span>
+<span><strong><%= l(:label_subtask_rule_new) %>:</strong></span>
 <%= form_tag(create_subtask_path(@project.id), method: :post, class: "tabular") do %>
 <div class="box tabular">
 <table>
   <tr>
     <td>
       <div class="box tabular">
-        When creating a ticket of tracker
+        <%= l(:text_subtask_rule_parent) %>
         <%= select_tag(:parent, options_from_collection_for_select(@all_trackers, :id, :name))  %>,
-        suggest creation of a subticket of tracker
+        <%= l(:text_subtask_rule_child) %>
         <%= select_tag(:child, options_from_collection_for_select(@all_trackers, :id, :name))  %>.
       </div>
     <td>
       <div class="box tabular">
-        Create subtask by default: <%= check_box_tag(:default, :default, false) %>
+        <%= l(:field_subtask_default) %>: <%= check_box_tag(:default, :default, false) %>
       </div>
     </td>
     <td>
       <div class="box tabular">
-        Create subtask by force: <%= check_box_tag(:auto, :auto, false ) %>
+        <%= l(:field_subtask_auto) %>: <%= check_box_tag(:auto, :auto, false ) %>
       </div>
     </td>
     <td>
       <div class="box tabular">
-        Apply to descendant projects: <%= check_box_tag(:inheritance, :inheritance, false) %>
+        <%= l(:field_subtask_inheritance) %>: <%= check_box_tag(:inheritance, :inheritance, false) %>
       </div>
     </td>
     <td>

@@ -8,6 +8,23 @@ en:
   notice_fail_delete_subtask: Subtask-config delete failed.
   notice_successful_delete_subtask: Subtask-config deleted successfully.
   permission_enable_auto_create_subtasks: Create subtasks
+  label_subtask_plural: Subtasks
+  label_subtask_rules: Subtask creation rules
+  label_subtask_rule_new: Add subtask creation rule
+  text_subtask_rule_parent: When creating a ticket of tracker
+  text_subtask_rule_child: suggest creation of a subticket of tracker
+  field_subtask_default: Create subtask by default
+  field_subtask_auto: Create subtask by force
+  field_subtask_inheritance: Apply to descendant projects
+  field_subtask_template: Apply template to child
+  field_subtask_custom_fields: Inherit custom fields
+  label_subtask_create: Create subtasks
+  label_subtask_create_new: Create new subtasks
+  label_subtask_required: required
+  label_subtask_existing:
+    zero: none exist yet
+    one: "%{count} exists already"
+    other: "%{count} exist already"
   error_subtask_not_created:
     one: "The subtask could not be created: %{errors}"
     other: "%{count} subtasks could not be created: %{errors}"

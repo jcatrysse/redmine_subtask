@@ -23,6 +23,19 @@ class SubtaskSettingsControllerTest < Redmine::ControllerTest
     assert_select "form[action='/projects/1/subtask_settings/create']"
   end
 
+  def test_show_labels
+    create_rule
+    get :show, :params => {:project_id => 'ecookbook'}
+    assert_select '#main-menu a.subtask-settings', :text => 'Subtasks'
+    assert_select 'strong', :text => 'Subtask creation rules:'
+    assert_select 'strong', :text => 'Add subtask creation rule:'
+    assert_select 'div.box', :text => /When creating a ticket of tracker\s+Bug.*,\s+suggest creation of a subticket of tracker/m
+    ['Create subtask by default:', 'Create subtask by force:', 'Apply to descendant projects:',
+     'Inherit custom fields:'].each do |label|
+      assert_select 'div.box', :text => /#{label}/
+    end
+  end
+
   def test_show_uses_an_svg_icon_for_delete
     skip 'sprite icons exist since Redmine 6' unless ApplicationController.helpers.respond_to?(:sprite_icon)
 
