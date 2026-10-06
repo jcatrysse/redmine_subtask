@@ -1,10 +1,10 @@
 // Shared steps for this plugin's scenarios (CommonJS, so e2e.sh, which runs
 // every test/e2e/*.mjs, does not run it as a scenario).
 
-// The rows of the existing rules on the settings page; the "add" form is a
-// separate table inside its own form.
+// The rows of the existing rules on the settings page: only they carry the
+// hidden "parent" field (the "add" form has a select instead).
 function ruleRows(t) {
-  return t.page.locator('#content > div.box.tabular > table > tbody > tr');
+  return t.page.locator('#content tr:has(input[type=hidden][name=parent])');
 }
 
 // Adds a rule through the settings page as the logged-in user.
