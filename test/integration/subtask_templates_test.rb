@@ -37,8 +37,10 @@ class SubtaskTemplatesTest < Redmine::IntegrationTest
 
   def test_choosing_a_project_template
     rule = create_rule
+    get '/projects/ecookbook/subtask_settings/show'
+    value = css_select('select[name=template] option').detect {|o| o.text == 'Project feature'}['value']
     put "/projects/ecookbook/subtask_settings/#{rule.id}",
-        :params => {:parent => '1', :child => '2', :template => @project_template.id.to_s}
+        :params => {:parent => '1', :child => '2', :template => value}
     rule.reload
     assert_equal [@project_template.id, false], [rule.template, rule.global]
     follow_redirect!
@@ -47,8 +49,10 @@ class SubtaskTemplatesTest < Redmine::IntegrationTest
 
   def test_choosing_a_global_template
     rule = create_rule
+    get '/projects/ecookbook/subtask_settings/show'
+    value = css_select('select[name=template] option').detect {|o| o.text == 'Global feature'}['value']
     put "/projects/ecookbook/subtask_settings/#{rule.id}",
-        :params => {:parent => '1', :child => '2', :template => @global_template.id.to_s}
+        :params => {:parent => '1', :child => '2', :template => value}
     rule.reload
     assert_equal [@global_template.id, true], [rule.template, rule.global]
     follow_redirect!
@@ -81,5 +85,39 @@ class SubtaskTemplatesTest < Redmine::IntegrationTest
     post '/projects/ecookbook/issues', :params => {:issue => {:tracker_id => 1, :subject => 'Parent', :description => 'Parent text'}}
     assert_equal 2, Issue.order(:id).last.tracker_id
     assert_equal '', Issue.order(:id).last.description.to_s
+  end
+
+  # Both template tables number from 1, so a project template and a global
+  # template often share an id; the choice must still be the one the user made.
+  def test_choosing_a_project_template_with_the_id_of_a_global_template
+    template = IssueTemplate.create!(:id => 1001, :title => 'Same id as global', :description => 'Same id text',
+                                     :tracker_id => 2, :author_id => 1, :enabled => true, :project_id => 1)
+    rule = create_rule(:auto => true)
+    get '/projects/ecookbook/subtask_settings/show'
+    value = css_select('select[name=template] option').detect {|o| o.text == 'Same id as global'}['value']
+    put "/projects/ecookbook/subtask_settings/#{rule.id}", :params => {:parent => '1', :child => '2', :auto => 'auto', :template => value}
+    rule.reload
+    assert_equal [template.id, false], [rule.template, rule.global]
+    follow_redirect!
+    assert_select "select[name=template] option[selected]", :text => 'Same id as global'
+
+    post '/projects/ecookbook/issues', :params => {:issue => {:tracker_id => 1, :subject => 'Parent'}}
+    assert_equal 'Same id text', Issue.order(:id).last.description
+  end
+
+  def test_choosing_a_global_template_with_the_id_of_a_project_template
+    IssueTemplate.create!(:id => 1001, :title => 'Same id as global', :description => 'Same id text',
+                          :tracker_id => 2, :author_id => 1, :enabled => true, :project_id => 1)
+    rule = create_rule(:auto => true)
+    get '/projects/ecookbook/subtask_settings/show'
+    value = css_select('select[name=template] option').detect {|o| o.text == 'Global feature'}['value']
+    put "/projects/ecookbook/subtask_settings/#{rule.id}", :params => {:parent => '1', :child => '2', :auto => 'auto', :template => value}
+    rule.reload
+    assert_equal [@global_template.id, true], [rule.template, rule.global]
+    follow_redirect!
+    assert_select "select[name=template] option[selected]", :text => 'Global feature'
+
+    post '/projects/ecookbook/issues', :params => {:issue => {:tracker_id => 1, :subject => 'Parent'}}
+    assert_equal 'Global template text', Issue.order(:id).last.description
   end
 end

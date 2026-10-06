@@ -50,8 +50,10 @@ class SubtaskSettingsController < ApplicationController
     subtask.auto = params[:auto]
     subtask.default = params[:default]
     subtask.inheritance = params[:inheritance]
-    subtask.template = params[:template]
-    subtask.global = (subtask.template.present? and global_templates(subtask.child).map{|template| template.id}.include? subtask.template)
+    # "global-<id>" for a global template, "<id>" for a project template: both tables number from 1
+    template = params[:template].to_s
+    subtask.template = template.delete_prefix('global-')
+    subtask.global = (subtask.template.present? and template.start_with?('global-'))
     subtask.custom_fields = params[:custom_fields].to_json
     if subtask.save
       flash[:notice] = l(:notice_successful_update_subtask)

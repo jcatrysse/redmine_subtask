@@ -35,14 +35,12 @@
           <% if !@project.enabled_module(:issue_templates).nil? %>
             <% child_tracker = subtask.child %>
             <% child_templates = @templates[child_tracker] %>
-            <% template = child_templates.select{|template| subtask.template == template.id} %>
-            <% if template.length == 1 and subtask.global == (template[0].is_a? GlobalIssueTemplate) %>
-              <% template_id = subtask.template %>
-            <% else %>
-              <% template_id = nil %>
-            <% end %>
+            <%# global templates are numbered apart from project templates, so their value says which it is %>
+            <% template_options = child_templates.map {|t| [t.title, "#{'global-' if t.is_a?(GlobalIssueTemplate)}#{t.id}"]} %>
+            <% template = child_templates.detect {|t| t.id == subtask.template && t.is_a?(GlobalIssueTemplate) == !!subtask.global} %>
+            <% template_id = template && "#{'global-' if subtask.global}#{template.id}" %>
             <%= l(:field_subtask_template) %>:
-            <%= select_tag(:template, options_from_collection_for_select(child_templates, :id, :title, template_id), {:include_blank => true}) %>
+            <%= select_tag(:template, options_for_select(template_options, template_id), {:include_blank => true}) %>
           <% end %>
           </div>
         </td>
