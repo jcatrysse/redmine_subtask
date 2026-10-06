@@ -1,5 +1,5 @@
 class Subtask < ActiveRecord::Base
-  # PATCHED: removed from ActiveSupport in Rails 5.1
+  # PATCHED: gone with the classic autoloader in Rails 7.0
   # unloadable
   belongs_to :project
 
