@@ -18,25 +18,26 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | Plugin id | `redmine_subtask` |
 | GEOxyz runs today | `develop` |
 | Upstream | geen |
-| Runs on Redmine 7 as is | NEE |
+| Runs on Redmine 7 as is | NEE (fixed on this branch: JA) |
 | Upstream sync | GEEN UPSTREAM |
 | After sync | n.v.t. |
 | Complexity (1 trivial .. 5 rewrite) | 1 |
 | Measured on | Redmine 7.0.1 (7.0-stable-GEOxyz + latest 7.0-stable), Rails 8.1.3.1, Ruby 3.3.6, PostgreSQL 16 and MariaDB 10.11 |
 | Branch head when this file was written | `6182281` |
+| Migration session | 2026-10-06: DONE, see "Results" below |
 
 ## Already on this branch
 
-- `f058fb5` Remove `unloadable`, gone from ActiveSupport since Rails 5.1
+- `f058fb5` Remove `unloadable`, gone with the classic autoloader in Rails 7.0 (comment corrected in `9814e65`)
 - `c5b78f7` Only create the subtasks of rules that apply to the issue (security: foreign rule ids, permission, API 500)
 - `7ab9bf6` Show the user which subtasks could not be created (work list 2)
 - `dabc36b` Subtask settings: 404 for unknown rules and projects, redirect to the settings page
 - `3016aac` Subtask settings: SVG icon on the delete link
 - `4675ed1` Move the plugin's English UI texts into the locale
-- `2a2d1fa` Tests of the redmine_issue_templates integration (work list 1)
+- `2a2d1fa` Test the redmine_issue_templates integration (work list 1)
 - `b22f7c7` Keep project and global templates apart when choosing a subtask template
-
-Session in progress (2026-10-06): e2e scenarios, MariaDB and the review still to come.
+- `b850667`, `2059412`, `df82998` End-to-end scenarios, screenshots, before pictures
+- `9814e65` Subtask: correct the comment on unloadable
 
 ## Work list for the migration session
 
@@ -45,13 +46,38 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 **Open items from the analysis** (Dutch; where they conflict with a decision or a priority item above, those win)
 
 1. Test together with redmine_issue_templates (template applied to child issue) - not installed here
+   - DONE: installed redmine_issue_templates `redmine70-migration` (88ff916) next to it;
+     `test/integration/subtask_templates_test.rb` (9 tests) and `test/e2e/templates.mjs`. Found and fixed
+     a real bug on the way (`b22f7c7`): project and global templates number from 1 in separate tables,
+     and choosing a project template whose id a global template also has stored and applied the
+     global one. Reproduced on develop/5.1 in `docs/e2e/before/templates.md`.
 2. createSubtasks swallows all exceptions into the log; failures are invisible to users
+   - DONE (`7ab9bf6`): a flash error names the child tracker and the validation messages; each child
+     in a savepoint; the root cause of the exception (custom values saved before the child existed,
+     NOT NULL on `custom_values.customized_id`) removed. Before: `docs/e2e/before/create-subtasks.md`.
+
+**Found during the session** (all done, each with tests that fail without the fix)
+
+- Security (`c5b78f7`): the hooks took any rule id from the request: a rule of another project or
+  another tracker, or one the user was never offered (no "Create subtasks" permission) created a
+  child issue, also through the REST API. Now only the rules the form offers, and ticked ones only
+  with the permission.
+- API `PUT /issues/:id.json` without an `issue` hash answered 500 after saving (`c5b78f7`).
+- `PUT`/`DELETE` of an unknown rule answered 500; unknown project raised outside Redmine's 404
+  handling; `redirect_back(fallback_location: :back)` failed without Referer (`dabc36b`).
+- Delete link without icon on Redmine 7 (`3016aac`); hardcoded English texts (`4675ed1`).
 
 **Checks**
 
 3. Run the plugin's whole test suite on Redmine 7.0-stable-GEOxyz with PostgreSQL AND MariaDB, and once on 5.1-stable if the branch is meant to stay 5.1-compatible.
+   - DONE, see "Results". Every change also runs on Redmine 5.1 (tests and browser).
 4. Check Redmine 7 webhooks against this plugin (see "Rules"), and note the result here even if nothing is needed.
+   - DONE, nothing needed: the plugin adds no issue data; subtasks are saved through `Issue#save`, so
+     core's `after_create_commit` sends `issue.created` for every subtask, with its parent.
+     Proven by `test_subtask_creation_triggers_the_issue_created_webhook` and live in
+     `test/e2e/api_webhook.mjs` (5 deliveries received: 2 parents, 3 subtasks with `parent.id`).
 5. Verify every feature of the plugin by hand on a running Redmine 7 (screenshots).
+   - DONE, see the inventory below and `docs/e2e/`.
 
 ## GEOxyz changes to review or re-apply
 
@@ -61,7 +87,114 @@ Own plugin: all of it is GEOxyz code, so there is nothing to re-apply. While mig
 
 Actions the person doing the upgrade must take, or know about, for this plugin:
 
-- None known. Add here what the session finds.
+- No migration, data fix, setting or cron. Stored rules (including `template` and `global`) are used as
+  they are.
+- Rules saved on develop with a project template whose id a global template also had were stored as
+  global (the bug fixed in `b22f7c7`). They now show the global template selected on the settings
+  page; a project manager who meant the project template picks it again and saves. Query to find
+  candidates: `SELECT * FROM subtasks WHERE global = true AND template IN (SELECT id FROM issue_templates)`
+  (PostgreSQL; `global = 1` on MariaDB).
+- Behaviour change users may notice: ticked (non-forced) subtasks are only created for users with
+  the "Create subtasks" permission and only for rules the form offers. The form already showed them
+  only to those users, so nobody loses something they could click.
+- A failing subtask now shows a red message on the issue page instead of nothing.
+
+## Results (session 2026-10-06)
+
+Environment: Redmine 7.0.1 (7.0-stable-GEOxyz 8067e23), Rails 8.1.3.1, Ruby 3.3.6; PostgreSQL 16.15,
+MariaDB 10.11.14; redmine_issue_templates `redmine70-migration` 88ff916. Redmine 5.1-stable with Ruby
+3.2.6 for the compatibility run and the before pictures.
+
+**Baseline before any change** (branch at 6509089, PostgreSQL): plugin tests `1 runs, 1 assertions,
+0 failures`; smoke 12 screenshots 0 problems, core 6 screenshots 0 problems; no plugin scenarios.
+
+**Plugin tests** (`./.codex/test_plugin.sh`, minitest: unit, functional, two integration files)
+
+| Redmine | database | with redmine_issue_templates | result |
+|---|---|---|---|
+| 7.0-stable-GEOxyz | PostgreSQL 16 | yes | 51 runs, 266 assertions, 0 failures, 0 errors, 0 skips |
+| 7.0-stable-GEOxyz | MariaDB 10.11 | yes | 51 runs, 266 assertions, 0 failures, 0 errors, 0 skips |
+| 7.0-stable-GEOxyz | PostgreSQL 16 | no | 51 runs, 212 assertions, 0 failures, 9 skips (the template tests) |
+| 5.1-stable | PostgreSQL 16 | no | 51 runs, 157 assertions, 0 failures, 11 skips (templates, SVG icon, webhooks) |
+
+Migrations down to 0 and up again: OK on PostgreSQL and MariaDB (`custom_fields` is `json` on
+PostgreSQL, `longtext` on MariaDB, both work). Production eager load: OK (`eager_load=true`, server
+boots in production mode).
+
+**End to end** (`./.codex/e2e.sh`, production mode, `start_server.sh --reset` first)
+
+| Redmine / database | scripts | screenshots | problems |
+|---|---|---|---|
+| 7.0 / PostgreSQL (committed in `docs/e2e/`) | smoke, core + 6 plugin scenarios | 54 | 0 |
+| 7.0 / MariaDB | smoke, core + 6 plugin scenarios | 54 | 0 |
+| 5.1 / PostgreSQL, this branch | smoke, core + 5 plugin scenarios (api_webhook needs Redmine 7) | 52 | 0 |
+| 5.1 / PostgreSQL, develop 4dab83d (`docs/e2e/before/`) | settings, create_subtasks, templates | 24 | 6, all old bugs fixed here |
+
+Every screenshot was opened and looked at.
+
+**Reviews**: own adversarial review of the whole diff (one wrong comment, fixed in `9814e65`);
+OpenAI review (gpt-5, `origin/develop..9814e65`): no findings, `docs/reviews/openai-2026-10-06-9814e65.md`.
+
+**Together with other GEOxyz plugins**: run with redmine_issue_templates only (the one this plugin
+integrates with). The full combination runs in the coordinator's harness, which is not in this repo.
+
+### Inventory of functions
+
+| function | how a user reaches it | scenario | screenshots |
+|---|---|---|---|
+| Project module "Subtasks", permissions "Subtask settings" and "Create subtasks" | Project settings > Modules; Roles | inheritance.mjs (module off), settings.mjs (reporter) | inheritance-module-off, settings-reporter-no-menu |
+| Project menu "Subtasks" (settings page), empty state | Project menu | settings.mjs | settings-empty |
+| Add a rule | Subtasks > Add | settings.mjs, all scenarios | settings-created |
+| Update a rule (by default, by force, descendant projects, inherited custom fields) | Subtasks > Update | settings.mjs, create_subtasks.mjs | settings-updated, create-subtasks-rules |
+| Delete a rule (confirmation) | Subtasks > Delete | settings.mjs | settings-deleted |
+| Refusals: no permission 403, outsider 403, anonymous to login, unknown rule/project 404 | direct URLs | settings.mjs | settings-reporter-refused, settings-outsider-refused, settings-anonymous-login, settings-unknown-project |
+| JSON list of rules `GET /projects/:id/subtask_settings` | URL (both permissions) | settings.mjs, api_webhook.mjs | smoke-11 |
+| New issue form: "Create subtasks" (by default ticked, forced locked), tracker switch | New issue | create_subtasks.mjs | create-subtasks-new-form, create-subtasks-tracker-switch |
+| Creating the subtasks: copy of the parent, empty description, inherited custom field only | New issue > Create | create_subtasks.mjs | create-subtasks-created, create-subtasks-child, create-subtasks-forced-only |
+| Member without "Create subtasks": no choices, forced rules still apply | New issue as reporter | create_subtasks.mjs, api_webhook.mjs | create-subtasks-reporter-form, create-subtasks-reporter-created |
+| Failure path: subtask cannot be saved, message shown | New issue | create_subtasks.mjs | create-subtasks-required-field, create-subtasks-failure |
+| Edit form: "Create new subtasks" with counts, creating on update | Edit issue | edit_subtasks.mjs | edit-subtasks-edit-form, -updated, -edit-form-again, -second-support, -reporter-edit |
+| Rules for descendant projects | New issue in a subproject | inheritance.mjs | inheritance-parent-rules, -sub-form, -sub-created |
+| Module off in a project: nothing offered or created, settings 403 | Project settings | inheritance.mjs | inheritance-module-off, -module-off-created |
+| Template for the subtask (redmine_issue_templates): project, global with the same id, none | Subtasks > template | templates.mjs | templates-project-template, -project-template-child, -global-template, -global-template-child, -no-template-child |
+| REST API: create with forced and requested subtasks; forged rule; update without issue hash; no permission | `POST/PUT /issues.json` | api_webhook.mjs | api-webhook-api-parent |
+| Webhooks (Redmine 7): `issue.created` for every subtask | My account > Webhooks | api_webhook.mjs | api-webhook-webhook |
+
+No mail handling, rake tasks, cron or macros in this plugin. Mail notifications for created subtasks
+are core's.
+
+### Open questions for Jan
+
+1. **Forced rules for users without "Create subtasks".** develop creates forced subtasks for everyone
+   who creates an issue, also when the form hides the choices (permission missing, REST API). Kept as
+   is. Options: (a) keep, forced is a project rule; (b) also require the permission. Recommendation: (a).
+2. **Ticked rules now need the permission and must apply to the issue** (`c5b78f7`). Before, any rule
+   id in the request created a child, also from another project. This is a security fix; it only
+   changes forged or API requests. Options: (a) keep; (b) allow ticked rules through the API without
+   the permission. Recommendation: (a).
+3. **The subtask is created without checking the user's right to add issues of the child tracker**
+   (unchanged from develop; the child is saved directly, as configured by the project manager).
+   Options: (a) keep; (b) skip children the user may not add, with the new error message.
+   Recommendation: (a), the rule is the project manager's decision.
+4. **Template choice format** (`b22f7c7`): option values are now `global-<id>` for global templates.
+   A settings page left open during the upgrade would post a plain id, read as a project template.
+   Nothing to decide unless you want the old guess as a fallback; recommendation: no fallback.
+
+### Left / deferred (not needed for Redmine 7)
+
+- The settings page puts a `<form>` around each table row, which is invalid HTML (browsers still
+  submit each row's own form; tested in Chromium on 5.1 and 7.0). A rewrite of that page is a layout
+  change, not migration work.
+- Creating a rule does not validate the tracker ids (a forged unknown id gives a rule that is never
+  offered, because only trackers of the project are).
+- An inherited custom value that is invalid for the child tracker reports its error on the parent
+  object (unchanged from develop).
+- Only `en.yml` ships; no other locale to keep in sync.
+- Kit notes: `.codex/test_setup.sh` fails as root on PostgreSQL (`$SUDO -u postgres` with an empty
+  `$SUDO`); worked around with `RMP_PROVISION_DB=0` and creating the role by hand.
+  `.codex/redmine_clone.sh` with a `REDMINE_DIR` outside the plugin copies the plugin's own
+  `redmine/` checkout into it; used rsync with `--exclude /redmine/` instead. After switching
+  `database.yml` from MariaDB to PostgreSQL, `bundle install` is needed again (the `pg` gem).
 
 ## How to test
 
