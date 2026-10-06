@@ -120,6 +120,24 @@ class SubtaskCreationTest < Redmine::IntegrationTest
     assert child.custom_field_value(6).blank?
   end
 
+  def test_failure_to_create_a_subtask_is_shown_to_the_user
+    create_rule(:auto => true)
+    # the child copies the parent; a required field of the child tracker only cannot be filled
+    field = IssueCustomField.create!(:name => 'Required <b>for</b> features', :field_format => 'string',
+                                     :is_required => true, :is_for_all => true, :tracker_ids => [2])
+    log_user('jsmith', 'jsmith')
+    assert_difference 'Issue.count', 1 do
+      create_issue
+    end
+    assert_response :redirect
+    assert_match /Feature request/, flash[:error].to_s
+    assert_match /The subtask could not be created/, flash[:error].to_s
+    assert_include 'Required &lt;b&gt;for&lt;/b&gt; features', flash[:error].to_s
+    follow_redirect!
+    assert_select '#flash_error', :text => /Feature request: Required <b>for<\/b> features cannot be blank/
+    assert_select '#flash_error b', 0
+  end
+
   def test_editing_an_issue_creates_the_selected_subtask
     rule = create_rule
     log_user('jsmith', 'jsmith')

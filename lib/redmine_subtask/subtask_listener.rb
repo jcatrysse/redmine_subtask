@@ -3,6 +3,8 @@ module RedmineSubtask
     module Hooks
       class SubtaskListener < Redmine::Hook::Listener
 
+        include Redmine::I18n
+
         def controller_issues_new_after_save(context = {})
           issue = context[:issue]
           controller = context[:controller]
@@ -18,7 +20,7 @@ module RedmineSubtask
 
             return unless subtasks
 
-            createSubtasks(subtasks, issue)
+            createSubtasks(subtasks, issue, controller)
           end
         end
 
@@ -33,7 +35,7 @@ module RedmineSubtask
 
             return unless selected_subtasks
 
-            createSubtasks(selected_subtasks, issue)
+            createSubtasks(selected_subtasks, issue, controller)
           end
         end
 
@@ -54,46 +56,61 @@ module RedmineSubtask
           applicable_subtasks.where(:id => selected_subtask_ids).order(:id).to_a
         end
 
-        def createSubtasks(subtasks, parent)
+        def createSubtasks(subtasks, parent, controller = nil)
+          failures = []
           subtasks.each do |subtask|
+            child = nil
             begin
-              child = parent.copy(nil, {:subtasks => false, :attachments => false, :link => false})
+              # a savepoint, so that a failing child cannot abort the transaction
+              # the parent is saved in
+              saved = Issue.transaction(:requires_new => true) do
+                child = parent.copy(nil, {:subtasks => false, :attachments => false, :link => false})
 
-              child.parent_issue_id=(parent.id)
-              child.tracker_id=(subtask.child)
-              child.description=('')
-              if parent.project.enabled_module(:issue_templates).present? and subtask.template.present?
-                if subtask.global
-                  templates = global_templates(parent.project.id, subtask.child)
-                else
-                  templates = issue_templates(parent.project.id, child.tracker_id)+inherit_templates(parent.project.id, child.tracker_id)
+                child.parent_issue_id=(parent.id)
+                child.tracker_id=(subtask.child)
+                child.description=('')
+                if parent.project.enabled_module(:issue_templates).present? and subtask.template.present?
+                  if subtask.global
+                    templates = global_templates(parent.project.id, subtask.child)
+                  else
+                    templates = issue_templates(parent.project.id, child.tracker_id)+inherit_templates(parent.project.id, child.tracker_id)
+                  end
+                  template = templates.select{|template| template.id == subtask.template}
+                  if template.present?
+                    child.description=(template[0].description)
+                  end
                 end
-                template = templates.select{|template| template.id == subtask.template}
-                if template.present?
-                  child.description=(template[0].description)
+
+                child.estimated_hours=(0)
+                child.done_ratio = 0
+                child.reset_custom_values!
+
+                custom_field_ids = (subtask.custom_fields.nil? ? [] : JSON.parse(subtask.custom_fields))
+                custom_field_ids = (custom_field_ids.blank? ? [] : custom_field_ids)
+                parent.custom_field_values.each do |custom_field_value|
+                  if custom_field_ids.include? custom_field_value.custom_field.id.to_s
+                    child.custom_field_values << custom_field_value
+                  end
                 end
+                # saved with the child (acts_as_customizable after_save); saving them
+                # before the child exists failed on an invalid child (customized_id null)
+
+                child.relations_from.clear
+                child.relations_to.clear
+
+                child.save || raise(ActiveRecord::Rollback)
               end
-
-              child.estimated_hours=(0)
-              child.done_ratio = 0
-              child.reset_custom_values!
-
-              custom_field_ids = (subtask.custom_fields.nil? ? [] : JSON.parse(subtask.custom_fields))
-              custom_field_ids = (custom_field_ids.blank? ? [] : custom_field_ids)
-              parent.custom_field_values.each do |custom_field_value|
-                if custom_field_ids.include? custom_field_value.custom_field.id.to_s
-                  child.custom_field_values << custom_field_value
-                end
+              unless saved
+                failures << "#{child.tracker.try(:name)}: #{child.errors.full_messages.join(', ')}"
+                Rails.logger.warn "redmine_subtask: subtask rule #{subtask.id} for issue ##{parent.id} not created: #{child.errors.full_messages.join(', ')}"
               end
-              child.save_custom_field_values
-
-              child.relations_from.clear
-              child.relations_to.clear
-
-              child.save
             rescue => e
-              Rails.logger.error e
+              failures << (child.try(:tracker).try(:name) || Tracker.find_by(:id => subtask.child).try(:name)).to_s
+              Rails.logger.error "redmine_subtask: subtask rule #{subtask.id} for issue ##{parent.id} failed: #{e.class}: #{e.message}"
             end
+          end
+          if failures.any? && controller.respond_to?(:flash)
+            controller.flash[:error] = l(:error_subtask_not_created, :count => failures.size, :errors => ERB::Util.html_escape(failures.join('; ')))
           end
         end
 

@@ -8,4 +8,7 @@ en:
   notice_fail_delete_subtask: Subtask-config delete failed.
   notice_successful_delete_subtask: Subtask-config deleted successfully.
   permission_enable_auto_create_subtasks: Create subtasks
+  error_subtask_not_created:
+    one: "The subtask could not be created: %{errors}"
+    other: "%{count} subtasks could not be created: %{errors}"
   
