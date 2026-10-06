@@ -10,20 +10,9 @@ module RedmineSubtask
           if issue.project.enabled_module(:subtasks).nil?
             return
           else
-            selected_subtasks = []
-            if context[:params][:issue].key?("new_subtask_ids")
-              selected_subtask_ids = context[:params][:issue]['new_subtask_ids'].reject { |id| id.empty? }
-              selected_subtasks = selected_subtask_ids.map{|subtask_id| Subtask.where(:id => subtask_id).first}
-            end
-
-            auto_subtasks = Subtask.where(:project_id => issue.project_id, :parent => issue.tracker_id, :auto => true)
-
-            project = Project.find(issue.project_id)
-
-            while project.parent_id.present? do
-              auto_subtasks += Subtask.where(:project_id =>  project.parent_id, :parent => issue.tracker_id, :auto => true, :inheritance => true)
-              project = Project.find(project.parent_id)
-            end
+            applicable_subtasks = Subtask.applicable_to(issue)
+            selected_subtasks = selected_subtasks(applicable_subtasks, issue, context[:params])
+            auto_subtasks = applicable_subtasks.where(:auto => true).to_a
 
             subtasks = (selected_subtasks+auto_subtasks).uniq
 
@@ -40,12 +29,7 @@ module RedmineSubtask
           if issue.project.enabled_module(:subtasks).nil?
             return
           else
-            selected_subtasks = []
-            if context[:params][:issue].key?("new_subtask_ids")
-              selected_subtask_ids = context[:params][:issue]['new_subtask_ids']
-              selected_subtask_ids = selected_subtask_ids.reject { |c| c.empty? }
-              selected_subtasks = selected_subtask_ids.map{|subtask_id| Subtask.where(:id => subtask_id).first}
-            end
+            selected_subtasks = selected_subtasks(Subtask.applicable_to(issue), issue, context[:params])
 
             return unless selected_subtasks
 
@@ -54,6 +38,21 @@ module RedmineSubtask
         end
 
         private
+
+        # The rules the user ticked in the issue form, limited to the ones that
+        # apply to the issue and to users who may create subtasks; anything else
+        # in the request is ignored.
+        def selected_subtasks(applicable_subtasks, issue, params)
+          return [] unless User.current.allowed_to?(:enable_auto_create_subtasks, issue.project)
+
+          issue_params = params && params[:issue]
+          return [] unless issue_params.respond_to?(:key?)
+
+          selected_subtask_ids = Array.wrap(issue_params[:new_subtask_ids]).map(&:to_s).reject(&:blank?)
+          return [] if selected_subtask_ids.empty?
+
+          applicable_subtasks.where(:id => selected_subtask_ids).order(:id).to_a
+        end
 
         def createSubtasks(subtasks, parent)
           subtasks.each do |subtask|
