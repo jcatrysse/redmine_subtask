@@ -25,6 +25,7 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | Measured on | Redmine 7.0.1 (7.0-stable-GEOxyz + latest 7.0-stable), Rails 8.1.3.1, Ruby 3.3.6, PostgreSQL 16 and MariaDB 10.11 |
 | Branch head when this file was written | `6182281` |
 | Migration session | 2026-10-06: DONE, see "Results" below |
+| Jan's decisions | 2026-10-07: q1-q3 recorded and pinned by tests (`0200529`), Redmine 7 / PostgreSQL only from now on |
 
 ## Already on this branch
 
@@ -38,6 +39,10 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 - `b22f7c7` Keep project and global templates apart when choosing a subtask template
 - `b850667`, `2059412`, `df82998` End-to-end scenarios, screenshots, before pictures
 - `9814e65` Subtask: correct the comment on unloadable
+- `269ef3c` Record Jan's decisions on the open questions (2026-10-07), `docs/DECISIONS-2026-10-07.md`
+- `8d292f3` Tests: grant redmine_view_issue_description's permission when it is installed (combined run)
+- `af3f365` Drop the code paths that existed only for Redmine 5.1 (Jan, 2026-10-07)
+- `0200529` Jan's decisions q1-q3: a test and an e2e scenario for each
 
 ## Work list for the migration session
 
@@ -70,7 +75,9 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 **Checks**
 
 3. Run the plugin's whole test suite on Redmine 7.0-stable-GEOxyz with PostgreSQL AND MariaDB, and once on 5.1-stable if the branch is meant to stay 5.1-compatible.
-   - DONE, see "Results". Every change also runs on Redmine 5.1 (tests and browser).
+   - DONE, see "Results". Since Jan's decision of 2026-10-07 only Redmine 7 with PostgreSQL is
+     required; the MariaDB and 5.1 runs of 2026-10-06 stay as history, the 5.1-only code paths are
+     removed (`af3f365`).
 4. Check Redmine 7 webhooks against this plugin (see "Rules"), and note the result here even if nothing is needed.
    - DONE, nothing needed: the plugin adds no issue data; subtasks are saved through `Issue#save`, so
      core's `after_create_commit` sends `issue.created` for every subtask, with its parent.
@@ -138,6 +145,50 @@ OpenAI review (gpt-5, `origin/develop..9814e65`): no findings, `docs/reviews/ope
 **Together with other GEOxyz plugins**: run with redmine_issue_templates only (the one this plugin
 integrates with). The full combination runs in the coordinator's harness, which is not in this repo.
 
+### Session 2026-10-07 (Jan's decisions)
+
+Redmine 7.0-stable-GEOxyz 8067e23, PostgreSQL 16.15, Ruby 3.3.6.
+
+| run | result |
+|---|---|
+| plugin tests, with redmine_issue_templates | 52 runs, 273 assertions, 0 failures, 0 errors, 0 skips |
+| plugin tests, with all 34 public GEOxyz plugins on `redmine70-migration` (list below) | 52 runs, 273 assertions, 0 failures, 0 errors, 0 skips |
+| e2e alone, after `start_server.sh --reset` (`docs/e2e/`) | smoke, core + 7 plugin scenarios, 63 screenshots, 0 problems |
+| e2e with all 34 plugins (not committed) | see below |
+
+The combined run installed, each at its `redmine70-migration` head of 2026-10-07: redmine_more_previews,
+bless_this_redmine_sso, redmine_ai_summary, issue_recurring, redmine_issue_todo_lists2,
+calendar_events_daily, redmine_custom_workflows, redmine_drawio, that_attachments_limit,
+redmine_view_issue_description, redmine_user_specific_theme, redmine_tint_issues,
+redmine_reporter_dashboards, redmine_stealth, redmine_project_workflows, computed_custom_field,
+redmine_parent_child_filters, redmine_mail_digest, redmine_ldap_sync, redmine_itil_priority,
+redmine_issue_templates, redmine_issue_field_visibility, redmine_extended_api, redmine_impersonate,
+redmine_editauthor, view_customize, custom_field_sql, redmine_issue_view_columns,
+redmine_depending_custom_fields, redmine_inline_edit_issues, redmine_wiki_extensions,
+redmine_paste_as_wiki_tables, redmine_mermaid_macro, redmine_description_macros. The private
+RedmineUP plugins (agile, checklists, contacts, helpdesk, people, tags, zenedit) and redmine_ai_triage
+were not installed.
+
+Findings of the combined run, none caused by this plugin (it patches no core method):
+- **Project > Settings answers HTTP 500** (`/projects/e2e-project/settings`, also `/settings/info`):
+  `super: no superclass method 'project_settings_tabs'`, the `alias_method` + `prepend` mix Jan
+  described; trace through redmine_mail_digest (`project_settings_tabs_with_issue_digest`, alias_method)
+  and the prepends of redmine_itil_priority, redmine_ai_summary, redmine_wiki_extensions,
+  redmine_custom_workflows, redmine_issue_view_columns, redmine_project_workflows,
+  redmine_reporter_dashboards. To fix in redmine_mail_digest. Because of it inheritance.mjs (which
+  switches the module in Project > Settings) cannot run in the combination.
+- **redmine_view_issue_description** answers 403 on issue pages, edit forms and `GET /issues/:id.json`
+  for roles without its `view_issue_description` permission (the seeded Reporter), and changes the
+  description markup: the reporter steps of core.mjs, create_subtasks.mjs, edit_subtasks.mjs and
+  api_webhook.mjs, and the description check of templates.mjs, fail there for that reason. Checked
+  directly instead: the reporter's API issue got only its forced Support subtask, and the template
+  descriptions are stored correctly (`Project template text.`, `Global template text.`, empty).
+  The plugin's tests give the test role that permission when the plugin is installed (`8d292f3`).
+- The issue list and the issue page answer 200 as admin in the combination (smoke).
+- Note: shoulda-context (from another plugin's Gemfile) crashes minitest 6's failure reporter
+  (`undefined local variable or method 'executable'`), so a failing test in the combined checkout
+  aborts the run instead of being listed.
+
 ### Inventory of functions
 
 | function | how a user reaches it | scenario | screenshots |
@@ -159,26 +210,38 @@ integrates with). The full combination runs in the coordinator's harness, which 
 | Template for the subtask (redmine_issue_templates): project, global with the same id, none | Subtasks > template | templates.mjs | templates-project-template, -project-template-child, -global-template, -global-template-child, -no-template-child |
 | REST API: create with forced and requested subtasks; forged rule; update without issue hash; no permission | `POST/PUT /issues.json` | api_webhook.mjs | api-webhook-api-parent |
 | Webhooks (Redmine 7): `issue.created` for every subtask | My account > Webhooks | api_webhook.mjs | api-webhook-webhook |
+| Jan's decisions q1-q3 as admin, manager, reporter, outsider (forced for everyone, ticked needs the permission, the rule decides over the child tracker), refusals: private project, tracker the role may not add | New issue, REST API, Roles | decisions.mjs | decisions-admin-created, -manager-created, -q1-reporter, -q2-reporter-api, -q1-outsider, -outsider-private-refused, -q3-role, -q3-refused-tracker, -q3-created |
 
 No mail handling, rake tasks, cron or macros in this plugin. Mail notifications for created subtasks
 are core's.
 
+### Decided by Jan (2026-10-07)
+
+Answered by Jan Catrysse on 2026-10-07 (`docs/DECISIONS-2026-10-07.md`). None needs a code change:
+each keeps what was already built; each is now pinned by a test and `test/e2e/decisions.mjs`.
+
+1. **q1, forced subtasks for users without "Create subtasks"**: A, "Zo laten: verplicht geldt voor
+   iedereen" (De regel van het project geldt altijd, wie het issue ook aanmaakt.). Proven for reporter
+   and outsider: decisions-q1-reporter, decisions-q1-outsider.
+2. **q2, ticked subtasks through the API without the permission**: A, "Zo laten: recht en geldige regel
+   nodig" (Het lek blijft dicht, en via de API gelden dezelfde regels als in het formulier.). Proven:
+   decisions-q2-reporter-api, `test_creating_an_issue_ignores_selected_rules_without_permission`.
+3. **q3, check the user's right to add the child tracker**: A, "Zo laten: de regel beslist" (De
+   instelling van de projectbeheerder geldt, ook als de gebruiker dat type issue zelf niet mag
+   aanmaken.). Proven: `test_forced_subtask_is_created_when_the_user_may_not_add_the_child_tracker`,
+   decisions-q3-role, decisions-q3-refused-tracker, decisions-q3-created.
+
+General decisions (every GEOxyz plugin): straight to Redmine 7, no 5.1 backports or 5.1-only code;
+PostgreSQL 16 only; deface without version constraint (this plugin does not use deface); core methods
+other plugins also patch are patched with `prepend`, never `alias_method` (this plugin patches no core
+method: no `alias_method`, `prepend` or `class_eval` in `app/`, `lib/`, `init.rb`); GitHub Actions
+manual only.
+
 ### Open questions for Jan
 
-1. **Forced rules for users without "Create subtasks".** develop creates forced subtasks for everyone
-   who creates an issue, also when the form hides the choices (permission missing, REST API). Kept as
-   is. Options: (a) keep, forced is a project rule; (b) also require the permission. Recommendation: (a).
-2. **Ticked rules now need the permission and must apply to the issue** (`c5b78f7`). Before, any rule
-   id in the request created a child, also from another project. This is a security fix; it only
-   changes forged or API requests. Options: (a) keep; (b) allow ticked rules through the API without
-   the permission. Recommendation: (a).
-3. **The subtask is created without checking the user's right to add issues of the child tracker**
-   (unchanged from develop; the child is saved directly, as configured by the project manager).
-   Options: (a) keep; (b) skip children the user may not add, with the new error message.
-   Recommendation: (a), the rule is the project manager's decision.
-4. **Template choice format** (`b22f7c7`): option values are now `global-<id>` for global templates.
-   A settings page left open during the upgrade would post a plain id, read as a project template.
-   Nothing to decide unless you want the old guess as a fallback; recommendation: no fallback.
+- **Template choice format** (`b22f7c7`, not part of the 2026-10-07 answers): option values are now
+  `global-<id>` for global templates. A settings page left open during the upgrade would post a plain
+  id, read as a project template. Recommendation: no fallback; nothing to do unless you want one.
 
 ### Left / deferred (not needed for Redmine 7)
 
@@ -227,7 +290,7 @@ results quoted in the analysis come from it.
 1. **Start**: `git fetch && git checkout redmine70-migration && git pull`. Read this whole file,
    including the analysis report at the bottom. Do not reopen decisions recorded here.
 2. **Baseline, before you change anything**:
-   - the plugin's tests on Redmine 7.0-stable-GEOxyz with PostgreSQL and with MariaDB;
+   - the plugin's tests on Redmine 7.0-stable-GEOxyz with PostgreSQL;
    - a real running Redmine with this plugin (`./.codex/start_server.sh`) and the browser run
      (`./.codex/e2e.sh`: smoke over every page the plugin adds, plus the core issue flows).
    Write the numbers here. Something already broken now is a finding, not your regression.
@@ -260,7 +323,6 @@ results quoted in the analysis come from it.
      reads them; API through `t.page.request`) and record command and result.
    - Before pictures where behaviour or layout changes: the branch GEOxyz runs today, on
      Redmine 5.1, same scenarios, `RMP_E2E_OUT=docs/e2e/before`.
-   - Run the whole e2e set once on MariaDB as well (`RMP_DB=mariadb`, then `start_server.sh --reset`).
 9. **Independent review**: first your own, adversarial: re-read the whole diff as if someone
    else wrote it and you are paid to reject it. Then, **when `OPENAI_API_KEY` is set in the
    session**, `./.codex/openai_review.sh`: it sends the diff of this branch to an OpenAI model
@@ -305,8 +367,13 @@ results quoted in the analysis come from it.
   (on by default: `t.sudo()` in a scenario). The breaker list is in the migration kit's CHECKLIST.md.
 - **Locales**: keep the locales the plugin ships in sync; translate a new key by matching the
   closest existing key in the same file, not from scratch; do not add new languages.
-- **5.1 compatibility**: prefer fixes that also run on Redmine 5.1 so they can be merged early;
-  say so when a fix cannot.
+- **Redmine 7 only** (Jan, 2026-10-07): GEOxyz goes straight to Redmine 7; no backports to 5.1, no
+  code paths that exist only for 5.1. `redmine70-migration` is what goes live.
+- **PostgreSQL only** (Jan, 2026-10-07): production runs PostgreSQL 16; tests and e2e run on
+  PostgreSQL. Keep SQL portable where that costs nothing; a MariaDB-only problem is a note, not a
+  blocker.
+- **Core patches** (Jan, 2026-10-07): a core method other plugins also patch is patched with
+  `prepend`, never `alias_method`. Deface, when used, without a version constraint.
 - **Git**: work on `redmine70-migration` only; never push to the default branch; never force-push
   a branch someone else uses. Descriptive commit messages (what and why). Push after every
   commit, together with the updated status in this file: a cloud session can stop at a usage
@@ -317,7 +384,7 @@ results quoted in the analysis come from it.
 ## Definition of done
 
 - All items of the work list are done or explicitly deferred with a reason, in this file.
-- The plugin's tests are green on Redmine 7.0-stable-GEOxyz with PostgreSQL and MariaDB
+- The plugin's tests are green on Redmine 7.0-stable-GEOxyz with PostgreSQL
   (numbers in this file); boot, production-like eager load, migrations up/down OK.
 - Every function in the inventory exercised end to end on a real running Redmine, with and
   without permissions and on its failure paths; `./.codex/e2e.sh` green; screenshots looked at,
