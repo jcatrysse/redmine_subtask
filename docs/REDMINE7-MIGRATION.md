@@ -43,6 +43,7 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 - `8d292f3` Tests: grant redmine_view_issue_description's permission when it is installed (combined run)
 - `af3f365` Drop the code paths that existed only for Redmine 5.1 (Jan, 2026-10-07)
 - `0200529` Jan's decisions q1-q3: a test and an e2e scenario for each
+- `71c3b94` Plan: decisions recorded; OpenAI review of `a1a44bb..71c3b94`: no findings (`docs/reviews/openai-2026-10-07-71c3b94.md`)
 
 ## Work list for the migration session
 
