@@ -15,6 +15,9 @@ module RedmineSubtaskTestHelper
     project.enabled_module_names = project.enabled_module_names | ['subtasks']
     role = Role.find(1)
     permissions.each { |permission| role.add_permission!(permission) }
+    # with redmine_view_issue_description installed (GEOxyz), the issue page
+    # and its edit form need that plugin's permission as well
+    role.add_permission!(:view_issue_description) if Redmine::AccessControl.permission(:view_issue_description)
   end
 
   def create_rule(attributes = {})
