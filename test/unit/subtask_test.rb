@@ -2,7 +2,6 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class SubtaskTest < ActiveSupport::TestCase
   include RedmineSubtaskTestHelper
-  fixtures(*RedmineSubtaskTestHelper::FIXTURES)
 
   # Replace this with your real tests.
   def test_truth

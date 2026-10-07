@@ -4,7 +4,6 @@ require File.expand_path('../../test_helper', __FILE__)
 # (RMP_EXTRA_PLUGINS, see docs/REDMINE7-MIGRATION.md).
 class SubtaskTemplatesTest < Redmine::IntegrationTest
   include RedmineSubtaskTestHelper
-  fixtures(*RedmineSubtaskTestHelper::FIXTURES)
 
   def setup
     super

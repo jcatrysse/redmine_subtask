@@ -2,7 +2,6 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class SubtaskSettingsControllerTest < Redmine::ControllerTest
   include RedmineSubtaskTestHelper
-  fixtures(*RedmineSubtaskTestHelper::FIXTURES)
   tests SubtaskSettingsController
 
   def setup
@@ -37,8 +36,6 @@ class SubtaskSettingsControllerTest < Redmine::ControllerTest
   end
 
   def test_show_uses_an_svg_icon_for_delete
-    skip 'sprite icons exist since Redmine 6' unless ApplicationController.helpers.respond_to?(:sprite_icon)
-
     create_rule
     get :show, :params => {:project_id => 'ecookbook'}
     assert_response :success

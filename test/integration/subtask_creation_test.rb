@@ -2,7 +2,6 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class SubtaskCreationTest < Redmine::IntegrationTest
   include RedmineSubtaskTestHelper
-  fixtures(*RedmineSubtaskTestHelper::FIXTURES)
 
   def setup
     super
@@ -212,8 +211,6 @@ class SubtaskCreationTest < Redmine::IntegrationTest
   end
 
   def test_subtask_creation_triggers_the_issue_created_webhook
-    skip 'webhooks exist since Redmine 7' unless defined?(Webhook)
-
     create_rule(:auto => true)
     triggered = []
     Webhook.stubs(:trigger).with {|event, object| triggered << [event, object.id]; true}
