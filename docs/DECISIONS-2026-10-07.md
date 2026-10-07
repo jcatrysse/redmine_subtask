@@ -31,3 +31,10 @@ What to do:
 7. Update Status, the inventory, the work list and "After the upgrade". Push `redmine70-migration` after every commit.
 8. These decisions are final; do not stop to ask about them. If one turns out to be impossible, write down why in the plan and carry on with the rest.
 9. End with a short report in Dutch: per decision what you did (commit), test numbers, e2e numbers (scenarios, screenshots, problems), the review result, what is left for Jan.
+
+## Round 2, decided by Jan on 2026-10-07 (evening)
+
+Jan answered these follow-up questions from the migration report the same way, one at a time, in the coordinating session.
+
+- redmine_subtask-n2-1 (subtask 4): Algemene templates hebben in de keuzelijst nu een eigen code ('global-' plus nummer). Slaat iemand een instellingenpagina op die tijdens de upgrade open bleef, dan wordt de keuze als projecttemplate gelezen. Bouwen we daar een opvang voor?
+  Jan chose: "Geen opvang" (Niets te bouwen; het risico is alleen een pagina die tijdens de upgrade open bleef.). Already built: keep it and record the decision.
