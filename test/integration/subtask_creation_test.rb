@@ -89,6 +89,22 @@ class SubtaskCreationTest < Redmine::IntegrationTest
     assert_equal 3, Issue.order(:id).last.project_id
   end
 
+  # Decision by Jan (2026-10-07, q3): the rule decides, also when the user may
+  # not add issues of the child tracker himself.
+  def test_forced_subtask_is_created_when_the_user_may_not_add_the_child_tracker
+    create_rule(:auto => true)
+    role = Role.find(1)
+    role.set_permission_trackers(:add_issues, [1])
+    role.save!
+    log_user('jsmith', 'jsmith')
+    assert_not role.reload.permissions_tracker?(:add_issues, Tracker.find(2))
+    parent = nil
+    assert_difference 'Issue.count', 2 do
+      parent = create_issue
+    end
+    assert_equal [2], parent.children.map(&:tracker_id)
+  end
+
   def test_creating_an_issue_without_selection_creates_no_subtask
     create_rule
     log_user('jsmith', 'jsmith')
