@@ -243,6 +243,7 @@ manual only.
 - **Template choice format** (`b22f7c7`, not part of the 2026-10-07 answers): option values are now
   `global-<id>` for global templates. A settings page left open during the upgrade would post a plain
   id, read as a project template. Recommendation: no fallback; nothing to do unless you want one.
+  **Decided by Jan, 2026-10-12: no fallback** (round 6 in `docs/DECISIONS-2026-10-07.md`).
 
 ### Left / deferred (not needed for Redmine 7)
 
