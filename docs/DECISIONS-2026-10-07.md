@@ -38,3 +38,9 @@ Jan answered these follow-up questions from the migration report the same way, o
 
 - redmine_subtask-n2-1 (subtask 4): Algemene templates hebben in de keuzelijst nu een eigen code ('global-' plus nummer). Slaat iemand een instellingenpagina op die tijdens de upgrade open bleef, dan wordt de keuze als projecttemplate gelezen. Bouwen we daar een opvang voor?
   Jan chose: "Geen opvang" (Niets te bouwen; het risico is alleen een pagina die tijdens de upgrade open bleef.). Already built: keep it and record the decision.
+
+## Round 6, 2026-10-12: the follow-up points of the plan
+
+Jan answered the open points this session recorded in docs/REDMINE7-MIGRATION.md after the earlier rounds, one by one in the coordinating session.
+
+- Template choice format (`b22f7c7`, `global-<id>`): **no fallback**. A settings page left open during the upgrade only needs the template chosen again.
