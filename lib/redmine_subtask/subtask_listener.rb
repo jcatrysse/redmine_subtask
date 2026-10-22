@@ -35,6 +35,17 @@ module RedmineSubtask
 
             return unless selected_subtasks
 
+            # A rule creates a copy of the issue with the rule's tracker. Ticked again on an issue
+            # that already has that child (same tracker, same subject), it would create it once more.
+            existing = issue.children.map { |child| [child.tracker_id, child.subject] }
+            duplicates, selected_subtasks = selected_subtasks.partition do |subtask|
+              existing.include?([subtask.child, issue.subject])
+            end
+            if duplicates.any? && controller.respond_to?(:flash)
+              names = duplicates.map { |subtask| Tracker.find_by(:id => subtask.child).try(:name) }.compact.uniq
+              controller.flash[:warning] = l(:warning_subtask_exists, :trackers => ERB::Util.html_escape(names.join(', ')))
+            end
+
             createSubtasks(selected_subtasks, issue, controller)
           end
         end

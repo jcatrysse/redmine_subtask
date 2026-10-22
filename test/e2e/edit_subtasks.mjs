@@ -1,6 +1,7 @@
 // Edit issue form: "Create new subtasks" with the count of existing subtasks
-// per tracker, creating one on update, an update that creates none, and a
-// member without the permission.
+// per tracker, creating one on update, an update that creates none, a rule
+// ticked again for a subtask that exists (not created twice), and a member
+// without the permission.
 import { createRequire } from 'node:module';
 import { e2e } from '../../.codex/e2e/lib.mjs';
 
@@ -57,10 +58,13 @@ expect(kids.length === 2, `an update without ticks created subtasks: ${JSON.stri
 
 await t.go(`${issuePath}/edit`);
 await choice('Support').locator('input').check();
-await save('update with a second Support', 'A second Support subtask on purpose.');
+await save('update with Support ticked again', 'Support ticked again.');
 kids = await children();
-expect(kids.length === 3, `ticking an existing tracker again: ${JSON.stringify(kids)}`);
-await t.shot('second-support', 'Ticking Support again creates a second Support subtask, as asked');
+expect(kids.length === 2, `ticking an existing subtask again created a duplicate: ${JSON.stringify(kids)}`);
+expect((await t.page.locator('#flash_warning').innerText().catch(() => '')).includes('Not created again, the issue already has this subtask: Support'),
+  'no warning about the existing Support subtask');
+expect(await t.page.locator('#flash_notice').count() === 1, 'the update itself (the note) was not saved');
+await t.shot('second-support', 'Ticking Support again does not create the same Support subtask twice: the note is saved, a warning says why');
 
 await t.login('reporter');
 await t.go(`${issuePath}/edit`);

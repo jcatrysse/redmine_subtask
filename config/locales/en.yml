@@ -28,4 +28,5 @@ en:
   error_subtask_not_created:
     one: "The subtask could not be created: %{errors}"
     other: "%{count} subtasks could not be created: %{errors}"
+  warning_subtask_exists: "Not created again, the issue already has this subtask: %{trackers}"
   

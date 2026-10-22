@@ -38,6 +38,7 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 - `2a2d1fa` Test the redmine_issue_templates integration (work list 1)
 - `b22f7c7` Keep project and global templates apart when choosing a subtask template
 - `b850667`, `2059412`, `df82998` End-to-end scenarios, screenshots, before pictures
+- 2026-10-22, finding #25086: ticking a rule again on an existing issue created another, identical subtask each time. On edit a ticked rule is now skipped when the issue already has a child with the rule's tracker and the issue's subject (what the rule would create: a copy of the issue with the rule's tracker), with a warning "Not created again, the issue already has this subtask: <tracker>". A child of that tracker with another subject (renamed, or made by hand) does not block it. The create path is unchanged (a new issue has no children). This replaces the earlier e2e step "Ticking Support again creates a second Support subtask, as asked", which recorded the behaviour the finding calls a bug. Tests on 7.0-stable-GEOxyz 578730a, PostgreSQL 16.15, with redmine_issue_templates `redmine70-migration` af87c8b: before 52 runs; after 54 runs, 294 assertions, 0 failures, 0 skips (without redmine_issue_templates: 54 runs, 240 assertions, 9 skips, as before); the duplicate test fails on the old code. e2e production mode with redmine_issue_templates: 9 scripts, 63 screenshots, 0 problems; on the old code the edit-subtasks step fails (a third subtask, no warning); `edit-subtasks-second-support.png` looked at and recommitted.
 - `9814e65` Subtask: correct the comment on unloadable
 - `269ef3c` Record Jan's decisions on the open questions (2026-10-07), `docs/DECISIONS-2026-10-07.md`
 - `8d292f3` Tests: grant redmine_view_issue_description's permission when it is installed (combined run)
@@ -97,6 +98,7 @@ Actions the person doing the upgrade must take, or know about, for this plugin:
 
 - No migration, data fix, setting or cron. Stored rules (including `template` and `global`) are used as
   they are.
+- Users who tick a rule again on an existing issue no longer get a duplicate subtask (same tracker, same subject); they see a warning instead.
 - Rules saved on develop with a project template whose id a global template also had were stored as
   global (the bug fixed in `b22f7c7`). They now show the global template selected on the settings
   page; a project manager who meant the project template picks it again and saves. Query to find

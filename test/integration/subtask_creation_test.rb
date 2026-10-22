@@ -188,6 +188,37 @@ class SubtaskCreationTest < Redmine::IntegrationTest
     assert_equal [2], Issue.find(1).children.map(&:tracker_id)
   end
 
+  # Ticking the rule again on the same issue created another, identical subtask each time.
+  def test_editing_an_issue_twice_with_the_rule_ticked_creates_the_subtask_once
+    rule = create_rule
+    log_user('jsmith', 'jsmith')
+    assert_difference 'Issue.count', 1 do
+      put '/issues/1', :params => {:issue => {:notes => 'first', :new_subtask_ids => ['', rule.id.to_s]}}
+    end
+    assert_nil flash[:warning]
+    assert_no_difference 'Issue.count' do
+      put '/issues/1', :params => {:issue => {:notes => 'second', :new_subtask_ids => ['', rule.id.to_s]}}
+    end
+    assert_redirected_to '/issues/1'
+    assert_equal [2], Issue.find(1).children.map(&:tracker_id)
+    follow_redirect!
+    assert_select '#flash_warning', :text => 'Not created again, the issue already has this subtask: Feature request'
+  end
+
+  # Identical is what the rule would create: the rule's tracker and the issue's subject. A child of
+  # that tracker with another subject (renamed, or made by hand) is another task.
+  def test_editing_an_issue_creates_the_subtask_when_the_existing_child_differs
+    rule = create_rule
+    log_user('jsmith', 'jsmith')
+    put '/issues/1', :params => {:issue => {:notes => 'first', :new_subtask_ids => ['', rule.id.to_s]}}
+    Issue.find(1).children.first.update_column(:subject, 'Renamed child')
+    assert_difference 'Issue.count', 1 do
+      put '/issues/1', :params => {:issue => {:notes => 'second', :new_subtask_ids => ['', rule.id.to_s]}}
+    end
+    assert_nil flash[:warning]
+    assert_equal [2, 2], Issue.find(1).children.map(&:tracker_id)
+  end
+
   def test_editing_an_issue_ignores_a_rule_of_another_project
     foreign = create_rule(:project_id => 2)
     log_user('jsmith', 'jsmith')
